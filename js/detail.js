@@ -19,9 +19,12 @@ var FieldInfo = {
     fZF: null            // 振幅   ---今日-快照
 }
 function setFieldInfo(data,yc){
-    FieldInfo.fLastPrice = data.Price;
-    FieldInfo.fZD = FieldInfo.fLastPrice - yc;
-    FieldInfo.fZDF = floatFixedTwo((FieldInfo.fZD/yc)*100);
+    if(data){
+        FieldInfo.fLastPrice = data.Price;
+        FieldInfo.fZD = FieldInfo.fLastPrice - yc;
+        FieldInfo.fZDF = floatFixedTwo((FieldInfo.fZD/yc)*100);
+    }
+    
 }
 function fillFieldInfo(yc){
     $(".tb-fn-title").text(FieldInfo.fName+"("+FieldInfo.fFiledCode+"."+FieldInfo.fInstrCode+")");
@@ -33,16 +36,18 @@ function fillFieldInfo(yc){
             .attr("class",(FieldInfo.fLastPrice-yc)>0?"red":"green");
 }
 function setKZFieldInfo(data){
-    FieldInfo.fHighest = data.High;
-    FieldInfo.fLowest = data.Low;
-    FieldInfo.fOpen = data.Open;
-    FieldInfo.fYCPrice = data.PreClose;
-    FieldInfo.fVolumnValue = data.Value/10000>1?data.Value/10000+"万":data.Value;
-    FieldInfo.fVolumnNum = data.Volume/10000>1?data.Volume/10000+"万":data.Volume;
-    // FieldInfo.fMarketRate = data.fMarketRate;
-    // FieldInfo.fMarketValue = data.fMarketValue;
-    // FieldInfo.fHSRate = data.fHSRate;
-    FieldInfo.fZF = FieldInfo.fHighest - FieldInfo.fLowest;
+    if(data){
+        FieldInfo.fHighest = data.High;
+        FieldInfo.fLowest = data.Low;
+        FieldInfo.fOpen = data.Open;
+        FieldInfo.fYCPrice = data.PreClose;
+        FieldInfo.fVolumnValue = data.Value/10000>1?data.Value/10000+"万":data.Value;
+        FieldInfo.fVolumnNum = data.Volume/10000>1?data.Volume/10000+"万":data.Volume;
+        // FieldInfo.fMarketRate = data.fMarketRate;
+        // FieldInfo.fMarketValue = data.fMarketValue;
+        // FieldInfo.fHSRate = data.fHSRate;
+        FieldInfo.fZF = FieldInfo.fHighest - FieldInfo.fLowest;
+    }
 }
 function fillKZFieldInfo(yc){
 
@@ -186,7 +191,7 @@ function getComList(data,endDate){
     });
     return comList;
 }
-// 按照 prop 从大到小排序
+// 按照 prop 从小到大排序
 function compareTop(prop){
     return function(obj1, obj2){
         var val1 = obj1[prop];
@@ -201,6 +206,27 @@ function compareTop(prop){
             return -1;
         }else if(val1 > val2){
             return 1;
+        }else{
+            return 0;
+        }
+
+    }
+}
+// 按照 prop 从大到小排序
+function compareSmall(prop){
+    return function(obj1, obj2){
+        var val1 = obj1[prop];
+        var val2 = obj2[prop];
+
+        if (!isNaN(Number(val1)) && !isNaN(Number(val2))) {
+            val1 = Number(val1);
+            val2 = Number(val2);
+        }
+       
+        if(val1 < val2){
+            return 1;
+        }else if(val1 > val2){
+            return -1;
         }else{
             return 0;
         }
@@ -228,6 +254,63 @@ function setInfo(list){
     })
     $(".bb-info ul").html(txt)
 }
+// 五档盘口
+function setfillPK(data){
+    console.log(FieldInfo.fYCPrice)
+    var bids = data.Bids;
+    var offer = data.Offer;
+    var titalB = data.TotalBidVolume/100000000?floatFixedTwo(data.TotalBidVolume/100000000)+"亿":(data.TotalBidVolume/10000?floatFixedTwo(data.TotalBidVolume/10000)+"万":data.TotalBidVolume);
+    var titalO = data.TotalOfferVolume/100000000?floatFixedTwo(data.TotalOfferVolume/100000000)+"亿":(data.TotalOfferVolume/10000?floatFixedTwo(data.TotalOfferVolume/10000)+"万":data.TotalOfferVolume);
+    
+    var minus = data.TotalBidVolume-data.TotalOfferVolume;
+    var percent = minus/(data.TotalBidVolume + data.TotalOfferVolume)*100;
+    bids.sort(compareSmall("Bids"))
+    offer.sort(compareSmall("Price"));
+    var minusP = minus/100000000?floatFixedTwo(minus/100000000)+"亿":(minus/10000?floatFixedTwo(minus/10000)+"万":minus);
+    $.each(bids,function(i,o){
+        $(".cb-pk ul:eq(0) li:eq("+i+") span:eq(1)").text(floatFixedTwo(offer[i].Price))
+            .attr("class",(offer[i].Price-FieldInfo.fYCPrice)>0?"red":"green");
+        $(".cb-pk ul:eq(0) li:eq("+i+") span:eq(2)").text(offer[i].Volume);
+        $(".cb-pk ul:eq(1) li:eq("+i+") span:eq(1)").text(floatFixedTwo(bids[i].Price))
+            .attr("class",(offer[i].Price-FieldInfo.fYCPrice)>0?"red":"green");
+        $(".cb-pk ul:eq(1) li:eq("+i+") span:eq(2)").text(bids[i].Volume);
+    })
+
+    $(".cb-title p:eq(0) span").text(floatFixedTwo(percent)+"%")
+        .attr("class",minus>0?"red":"green");
+    $(".cb-title p:eq(1) span").text(minusP)
+        .attr("class",minus>0?"red":"green");
+    $(".cb-title-sub .red").text(titalB)
+    $(".cb-title-sub .green").text(titalO);
+
+}
+// 逐笔成交
+function setfillZBCJ(data){
+    var zbcj = data;
+    zbcj.sort(compareSmall("RecorePrice"));
+    $.each(zbcj,function(i,o){
+        $(".cb-cj ul:eq(0) li:eq("+i+") span:eq(0)").text(formatTimeSec(zbcj[i].MarketTime));
+        $(".cb-cj ul:eq(0) li:eq("+i+") span:eq(1)").text(floatFixedTwo(zbcj[i].RecorePrice));
+        $(".cb-cj ul:eq(0) li:eq("+i+") span:eq(2)").text(zbcj[i].Volume);
+    });
+}
+function formatTimeSec(time) {
+    time = time.toString();
+    //TODO 后台返回的数据时间没有补0
+    if (time.length !== 6) {
+        var diff = 6 - (time.length);
+        var zero = "";
+        for (var i = 0; i < diff; i++) {
+            zero += "0";
+        }
+        time = zero + time;
+    }
+    var H = time.substring(0, 2);
+    var m = time.substring(2, 4);
+    var s = time.substring(4, 6)
+    time = H + ":" + m + ":" + s;
+    return time;
+};
 $(function(){
     // 合并时候新加的内容
     // $.queryKLine({

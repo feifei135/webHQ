@@ -128,7 +128,7 @@ h2{
 	width: 94px;
 }
 .cb-pk ul span:nth-child(2){
-	width: 85px;
+	width: 83px;
 }
 .cb-title-sub{
 	border-top: 1px solid #e5e5e5;
@@ -148,10 +148,10 @@ h2{
 	width: 94px;
 }
 .cb-cj ul span:nth-child(2){
-	width: 55px;
+	width: 83px;
 }
 .cb-cj ul span:nth-child(3){
-	width: 35px;
+	/*width: 46px;*/
 	text-align: right;
 }
 .cb-cj ul span:nth-child(4){

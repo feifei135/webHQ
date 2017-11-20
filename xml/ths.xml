@@ -1,4 +1,4 @@
-<!-- This XML file does not appear to have any style information associated with it. The document tree is shown below. -->
+This XML file does not appear to have any style information associated with it. The document tree is shown below.
 <INSTRUMENTS>
 <EXCHANGE id="101" code="THS" name="同花顺指数 ">
 <PRODUCT code="INDEX" name="指数" type="1" ts="09:30-11:30;13:00-15:00" PriceDecimal="2">

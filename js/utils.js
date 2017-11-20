@@ -11,7 +11,8 @@
         this.ws = null;
         this.defaults = {
             //wsUrl : 'ws://103.66.33.37:80'; //生产
-            wsUrl : "ws://172.17.20.203:7681",  //开发       
+            // wsUrl : "ws://172.17.20.203:7681",  //开发
+            wsUrl : "ws://103.66.33.67:443",  //开发       
             lockReconnect : false,//避免重复连接 连接锁如果有正在连接的则锁住
             timeout : 60000,//60秒
             timeoutObj : null,
@@ -123,6 +124,22 @@
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "Instrumenttype":"4"
+            },
+            // 盘口
+            QPK : {
+                "MsgType":"S101",
+                "DesscriptionType":"3",
+                "ExchangeID":opt.exchangeID,
+                "InstrumentID":opt.id,
+                "Instrumenttype":"3"
+            },
+            // 盘口
+            QZBCJ : {
+                "MsgType":"S101",
+                "DesscriptionType":"3",
+                "ExchangeID":opt.exchangeID,
+                "InstrumentID":opt.id,
+                "Instrumenttype":"1"
             }
         },
         this.options = $.extend({},this.defaults,opt);
@@ -309,6 +326,10 @@
             $this.getRealTimePush();
             // 清盘
             $this.getQP();
+            // 获取盘口数据
+            $this.getPK();
+            // 获取逐笔成交记录
+            $this.getZBCJ();
             //初始化报价图;
             // if(!$(".shibors").find("#mytable").length>0){
             //     $(".shibors").marketTable("init");
@@ -351,6 +372,16 @@
                 break;
                 case "Q640"://清盘
                     redrawChart(data,$this);
+                break;
+                case "Q617"://五档盘口
+                    // 1120新增
+                    setfillPK(data);
+                    break;
+                case "Q618"://五档盘口
+                    // 1120新增
+                    setfillZBCJ(data);
+                    console.log(data);
+                    break;
                 case "R646":  //心跳包
                     // console.log(data);
                 default:
@@ -374,6 +405,14 @@
     InitXMLIChart.prototype.getQP = function(){
         socket.request(this.options.QPDATA);
     };
+    //请求盘口
+    InitXMLIChart.prototype.getPK = function(){
+        socket.request(this.options.QPK);
+    },
+    //请求逐笔成交
+    InitXMLIChart.prototype.getZBCJ = function(){
+        socket.request(this.options.QZBCJ);
+    },
     //初始化分时图 
     function initCharts(data,type,$this){
         $this = $this.options;
