@@ -40,4 +40,8 @@
         width:"70px",
         borderB:"0"
     };
+    $.fn.showList = function(options,params){
+        options = $.extend({},$.fn.showList.defaults,options);
+        $this = $(this);
+    };
 })(jQuery, window, document);
