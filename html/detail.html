@@ -87,41 +87,10 @@
                 </div>
             </div>
             <div class="box fr cb-right">
-                <div class="cb-pk">
-                    <h2>五档盘口</h2>
-                    <div class="cb-title">
-                        <p>委比：<span>-</span></p>
-                        <p>委差：<span>-</span></p>
-                    </div>
-                    <ul>
-                        <li><span>卖五</span><span>-</span><span>-</span></li>
-                        <li><span>卖四</span><span>-</span><span>-</span></li>
-                        <li><span>卖三</span><span>-</span><span>-</span></li>
-                        <li><span>卖二</span><span>-</span><span>-</span></li>
-                        <li><span>卖一</span><span>-</span><span>-</span></li>
-                    </ul>
-                    <ul>
-                        <li><span>买一</span><span>-</span><span>-</span></li>
-                        <li><span>买二</span><span>-</span><span>-</span></li>
-                        <li><span>买三</span><span>-</span><span>-</span></li>
-                        <li><span>买四</span><span>-</span><span>-</span></li>
-                        <li><span>买五</span><span>-</span><span>-</span></li>
-                    </ul>
-                    <div class="cb-title cb-title-sub">
-                        <p>外盘：<span class="red">-</span></p>
-                        <p>内盘：<span class="green">-</span></p>
-                    </div>
-                </div>
-                <div class="cb-cj">
-                    <h2>逐笔成交</h2>
-                    <ul>
-                        <li><span>-</span><span>-</span><span>-</span></li>
-                        <li><span>14:05:09</span><span>13.17</span><span>1</span></li>
-                        <li><span>14:05:09</span><span>13.17</span><span>46</span></li>
-                        <li><span>14:05:09</span><span>13.17</span><span>15</span></li>
-                        <li><span>14:05:09</span><span>13.17</span><span>44</span></li>
-                    </ul>
-                </div>
+                <!-- 五档盘口 -->
+                <div class="cb-pk"></div>
+                <!-- 逐笔成交 -->
+                <div class="cb-cj"></div>
             </div>
             <!-- echarts图形结束 -->
         </div>
@@ -228,8 +197,18 @@
                 id = "1";
                 exchangeID = "101";
             }
+            var wsUrl;
+            switch(exchangeID){
+                case "101":
+                    wsUrl = "ws://172.17.20.203:7681";
+                    break;
+                case "2":
+                    wsUrl = "ws://103.66.33.67:443";
+                    break;
+                default: ;
+            }
 
-            $("#MLine").initMline({id:id,exchangeID:exchangeID});
+            $("#MLine").initMline({id:id,exchangeID:exchangeID,wsUrl:wsUrl});
             $.queryKLine({
                 "InstrumentID": id,
                 "ExchangeID":exchangeID

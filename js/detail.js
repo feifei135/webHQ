@@ -212,27 +212,6 @@ function compareTop(prop){
 
     }
 }
-// 按照 prop 从大到小排序
-function compareSmall(prop){
-    return function(obj1, obj2){
-        var val1 = obj1[prop];
-        var val2 = obj2[prop];
-
-        if (!isNaN(Number(val1)) && !isNaN(Number(val2))) {
-            val1 = Number(val1);
-            val2 = Number(val2);
-        }
-       
-        if(val1 < val2){
-            return 1;
-        }else if(val1 > val2){
-            return -1;
-        }else{
-            return 0;
-        }
-
-    }
-}
 // 十大流通股 信息
 function setInfo(list){
     var txt =  $(".bb-info ul").html();
@@ -256,43 +235,74 @@ function setInfo(list){
 }
 // 五档盘口
 function setfillPK(data){
-    console.log(FieldInfo.fYCPrice)
-    var bids = data.Bids;
-    var offer = data.Offer;
-    var titalB = data.TotalBidVolume/100000000?floatFixedTwo(data.TotalBidVolume/100000000)+"亿":(data.TotalBidVolume/10000?floatFixedTwo(data.TotalBidVolume/10000)+"万":data.TotalBidVolume);
-    var titalO = data.TotalOfferVolume/100000000?floatFixedTwo(data.TotalOfferVolume/100000000)+"亿":(data.TotalOfferVolume/10000?floatFixedTwo(data.TotalOfferVolume/10000)+"万":data.TotalOfferVolume);
-    
-    var minus = data.TotalBidVolume-data.TotalOfferVolume;
-    var percent = minus/(data.TotalBidVolume + data.TotalOfferVolume)*100;
-    bids.sort(compareSmall("Bids"))
-    offer.sort(compareSmall("Price"));
-    var minusP = minus/100000000?floatFixedTwo(minus/100000000)+"亿":(minus/10000?floatFixedTwo(minus/10000)+"万":minus);
-    $.each(bids,function(i,o){
-        $(".cb-pk ul:eq(0) li:eq("+i+") span:eq(1)").text(floatFixedTwo(offer[i].Price))
-            .attr("class",(offer[i].Price-FieldInfo.fYCPrice)>0?"red":"green");
-        $(".cb-pk ul:eq(0) li:eq("+i+") span:eq(2)").text(offer[i].Volume);
-        $(".cb-pk ul:eq(1) li:eq("+i+") span:eq(1)").text(floatFixedTwo(bids[i].Price))
-            .attr("class",(offer[i].Price-FieldInfo.fYCPrice)>0?"red":"green");
-        $(".cb-pk ul:eq(1) li:eq("+i+") span:eq(2)").text(bids[i].Volume);
+
+    var bids = data.Bids,       // 买
+        offer = data.Offer,     // 卖
+        titalB = setUnit(data.TotalBidVolume),      // 买盘(外盘)总量
+        titalO = setUnit(data.TotalOfferVolume),    // 卖盘(内盘)
+        minus = setUnit(data.TotalBidVolume-data.TotalOfferVolume),         // 委差
+        percent = (data.TotalBidVolume-data.TotalOfferVolume)/(data.TotalBidVolume + data.TotalOfferVolume)*100,  // 委比
+        txtOffer = "",
+        txtBids = "",
+        upperCase = ["一","二","三","四","五"];
+
+    $.each(upperCase,function(i,obj){
+        // 拼接盘口和逐笔成交的拼接字符串
+        txtOffer = setPKAndZBHtml(obj,"卖",offer[i]) + txtOffer;
+        txtBids += setPKAndZBHtml(obj,"买",bids[i]);
     })
 
-    $(".cb-title p:eq(0) span").text(floatFixedTwo(percent)+"%")
-        .attr("class",minus>0?"red":"green");
-    $(".cb-title p:eq(1) span").text(minusP)
-        .attr("class",minus>0?"red":"green");
-    $(".cb-title-sub .red").text(titalB)
-    $(".cb-title-sub .green").text(titalO);
 
+    var innerHtmlStr = "<h2>五档盘口</h2>\
+                        <div class=\"cb-title\">\
+                            <p>委比：<span class=\"cbt-wb "+(minus>0? "red":"green")+"\">"+floatFixedTwo(percent)+"%"+"</span></p>\
+                            <p>委差：<span class=\"cbt-wc "+(minus>0? "red":"green")+"\">"+minus+"</span></p>\
+                        </div>\
+                        <ul>"+txtOffer+"</ul>\
+                        <ul>"+txtBids+"</ul>\
+                        <div class=\"cb-title cb-title-sub\">\
+                            <p>外盘：<span class=\"red cbt-wp\">"+titalB+"</span></p>\
+                            <p>内盘：<span class=\"green cbt-np\">"+titalO+"</span></p>\
+                        </div>";
+
+
+
+    $(".cb-pk").html(innerHtmlStr);
+
+}
+// 获取数据单位
+function setUnit(data){
+    return data/100000000?floatFixedTwo(data/100000000)+"亿":(data/10000?floatFixedTwo(data/10000)+"万":data);
+}
+// 拼接盘口和逐笔成交的拼接字符串
+function setPKAndZBHtml(obj, status, data){
+    if(data){
+        var txtData = "<span class="+((data.Price-FieldInfo.fYCPrice)>0?"red":"green")+">"+floatFixedTwo(data.Price)+"</span>\
+                       <span>"+data.Volume+"</span>";
+    }else{
+        var txtData = "<span>--</span><span>--</span>";
+    }
+    
+    var text = "<li><span>"+status+obj+"</span>"+txtData+"</li>";
+    return text;
 }
 // 逐笔成交
 function setfillZBCJ(data){
-    var zbcj = data;
-    zbcj.sort(compareSmall("RecorePrice"));
-    $.each(zbcj,function(i,o){
-        $(".cb-cj ul:eq(0) li:eq("+i+") span:eq(0)").text(formatTimeSec(zbcj[i].MarketTime));
-        $(".cb-cj ul:eq(0) li:eq("+i+") span:eq(1)").text(floatFixedTwo(zbcj[i].RecorePrice));
-        $(".cb-cj ul:eq(0) li:eq("+i+") span:eq(2)").text(zbcj[i].Volume);
+
+    var text = $(".cb-cj ul")[0]?$(".cb-cj ul").html():"";
+
+    $.each(data,function(i,obj){
+        text = "<li><span>"+formatTimeSec(obj.MarketTime)+"</span><span>"+floatFixedTwo(obj.RecorePrice)+"</span><span>"+obj.Volume+"</span></li>"+text;
     });
+
+    var innerHtmlStr = "<h2>逐笔成交</h2>\
+                        <ul>"+text+"</ul>";
+    $(".cb-cj").html(innerHtmlStr);
+
+    if($(".cb-cj li").length>1){
+        $(".cb-cj li:gt(0)").remove();
+    }
+
 }
 function formatTimeSec(time) {
     time = time.toString();
