@@ -74,6 +74,10 @@ function getStockInfo(_codeList,id){
             FieldInfo.fFiledCode = $(this).attr("code");
         };
     });
+
+    // 个股需要查询企业信息，公司信息
+    var reqIds = ["23000171","23000138","23000164"];
+    requireCom(reqIds);
 };
 // 取两位小数点
 function floatFixedTwo(data) {
@@ -83,7 +87,7 @@ function floatFixedTwo(data) {
 function floatFixedDecimal(data) {
     return parseFloat(data).toFixed(FieldInfo.fPriceDecimal);
 };
-var requireCom = function(indId,reqIds){
+var requireCom = function(reqIds){
     
     var indId = FieldInfo.fFiledCode;
 
@@ -99,50 +103,54 @@ var requireCom = function(indId,reqIds){
                 console.log("请求公司信息出错");
             },
             success: function(data){
-                var com_Obj = data.response.data[0];
-                
-                if(com_Obj.TEL){
-                    // 主营产品 23000138
-                    $("#com_main_pro").text(com_Obj.MAIN_PROD);
-                    // 董秘电话 
-                    $("#com_tel").text(com_Obj.TEL);
-                }else{
-                    if(com_Obj.TTL_SHR_LF){
 
-                        com_Obj.TTL_SHR = com_Obj.TTL_SHR.replace(/,/g,"");
-                        com_Obj.TTL_SHR_LF = com_Obj.TTL_SHR_LF.replace(/,/g,"");
-
-                        var com_Ltg = com_Obj.TTL_SHR/100000000>1?(floatFixedTwo(com_Obj.TTL_SHR/100000000)+"亿股"):(com_Obj.TTL_SHR/10000>1?(floatFixedTwo(com_Obj.TTL_SHR/10000)+"万股"):com_Obj.TTL_SHR+"股");
-                        var com_Fltg = com_Obj.TTL_SHR_LF/100000000>1?(floatFixedTwo(com_Obj.TTL_SHR_LF/100000000)+"亿股"):(com_Obj.TTL_SHR_LF/10000>1?(floatFixedTwo(com_Obj.TTL_SHR_LF/10000)+"万股"):com_Obj.TTL_SHR_LF+"股");
-                        // 流通股（非限售） 23000164
-                        $("#com_ttl_shrl").text(com_Ltg);
-                        // 总股本 
-                        $("#com_ttl_shr").text(com_Fltg);
-
+                if(data.response.data){
+                    var com_Obj = data.response.data[0];
+                    
+                    if(com_Obj.TEL){
+                        // 主营产品 23000138
+                        $("#com_main_pro").text(com_Obj.MAIN_PROD);
+                        // 董秘电话 
+                        $("#com_tel").text(com_Obj.TEL);
                     }else{
-                        // 注册资本 23000171
-                        com_Obj.REG_CPTL = com_Obj.REG_CPTL.replace(/,/g,"");
-                        var com_Zczb = com_Obj.REG_CPTL/100000000>1?(floatFixedTwo(com_Obj.REG_CPTL/100000000)+"亿"):(com_Obj.REG_CPTL/10000>1?(floatFixedTwo(com_Obj.REG_CPTL/10000)+"万"):com_Obj.REG_CPTL);
-                        
-                        // 公司名称
-                        $("#com_name").text(com_Obj.COM_NAME);
-                        // 董事长
-                        $("#com_psn").text(com_Obj.PSN_NAME);
-                        // 总经理
-                        $("#com_gm").text(com_Obj.GM);
-                        // 办公地址
-                        $("#com_addr").text(com_Obj.OFS_ADDR);
-                        // 办公网址
-                        $("#com_website").text(com_Obj.WEB_SITE);
-                        // 注册资本
-                        $("#com_zc").text(com_Zczb);
-                        // 上市日期
-                        $("#com_ss").text((com_Obj.LST_DT).split(" ")[0]);
+                        if(com_Obj.TTL_SHR_LF){
+
+                            com_Obj.TTL_SHR = com_Obj.TTL_SHR.replace(/,/g,"");
+                            com_Obj.TTL_SHR_LF = com_Obj.TTL_SHR_LF.replace(/,/g,"");
+
+                            var com_Ltg = com_Obj.TTL_SHR/100000000>1?(floatFixedTwo(com_Obj.TTL_SHR/100000000)+"亿股"):(com_Obj.TTL_SHR/10000>1?(floatFixedTwo(com_Obj.TTL_SHR/10000)+"万股"):com_Obj.TTL_SHR+"股");
+                            var com_Fltg = com_Obj.TTL_SHR_LF/100000000>1?(floatFixedTwo(com_Obj.TTL_SHR_LF/100000000)+"亿股"):(com_Obj.TTL_SHR_LF/10000>1?(floatFixedTwo(com_Obj.TTL_SHR_LF/10000)+"万股"):com_Obj.TTL_SHR_LF+"股");
+                            // 流通股（非限售） 23000164
+                            $("#com_ttl_shrl").text(com_Ltg);
+                            // 总股本 
+                            $("#com_ttl_shr").text(com_Fltg);
+
+                        }else{
+                            // 注册资本 23000171
+                            com_Obj.REG_CPTL = com_Obj.REG_CPTL.replace(/,/g,"");
+                            var com_Zczb = com_Obj.REG_CPTL/100000000>1?(floatFixedTwo(com_Obj.REG_CPTL/100000000)+"亿"):(com_Obj.REG_CPTL/10000>1?(floatFixedTwo(com_Obj.REG_CPTL/10000)+"万"):com_Obj.REG_CPTL);
+                            
+                            // 公司名称
+                            $("#com_name").text(com_Obj.COM_NAME);
+                            // 董事长
+                            $("#com_psn").text(com_Obj.PSN_NAME);
+                            // 总经理
+                            $("#com_gm").text(com_Obj.GM);
+                            // 办公地址
+                            $("#com_addr").text(com_Obj.OFS_ADDR);
+                            // 办公网址
+                            $("#com_website").text(com_Obj.WEB_SITE);
+                            // 注册资本
+                            $("#com_zc").text(com_Zczb);
+                            // 上市日期
+                            $("#com_ss").text((com_Obj.LST_DT).split(" ")[0]);
+
+                        }
 
                     }
-
-                }
-                    
+                }else{
+                    $(".bottom-bar").html("<div class='box feild-null' style='height: 560px;font-size: 20px;margin-bottom:20px'>d=====(￣▽￣*)b~~~~~指数页面该公司信息为空~~~~~</div>");
+                } 
             }
         });
     });
@@ -158,16 +166,20 @@ var requireCom = function(indId,reqIds){
             console.log("请求公司信息出错");
         },
         success: function(data){
-            var com_Obj = data.response.data;
-            // 获取最新的报告期
-            var endDate = getEndDate(com_Obj);
-            // 找到最新报告期的十大流通股东
-            var comList = getComList(com_Obj,endDate);
-            comList.sort(compareTop("SH_SN"));
-            // 取前十
-            var comList = comList.slice(0,10);
-            // 拼接字符串
-            setInfo(comList);
+            if(data.response.data){
+                var com_Obj = data.response.data;
+                // 获取最新的报告期
+                var endDate = getEndDate(com_Obj);
+                // 找到最新报告期的十大流通股东
+                var comList = getComList(com_Obj,endDate);
+                comList.sort(compareTop("SH_SN"));
+                // 取前十
+                var comList = comList.slice(0,10);
+                // 拼接字符串
+                setInfo(comList);
+            }else{
+                $(".bottom-bar").html("<div class='box feild-null' style='height: 560px;font-size: 20px;margin-bottom:20px'>d=====(￣▽￣*)b~~~~~指数页面该公司信息为空~~~~~</div>");
+            }
         }
     });
     

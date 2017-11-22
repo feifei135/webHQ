@@ -200,17 +200,13 @@
                     // 深交所接口
                     wsUrl = "ws://103.66.33.67:443";
                     stockXMlUrl = "http://172.17.20.203:6789/2";
-                    // 个股需要查询企业信息，公司信息
-                    // var indId = "000001";
-                    var reqIds = ["23000171","23000138","23000164"];
-                    requireCom(reqIds);
+                    
                     break;
                 case "101":;
                 default: 
                     // 上证指数接口
                     wsUrl = "ws://172.17.20.203:7681";
                     stockXMlUrl = "http://172.17.20.203:6789/101";
-                    $(".bottom-bar").html("<div class='box feild-null' style='height: 560px;font-size: 20px;margin-bottom:20px'>d=====(￣▽￣*)b~~~~~指数页面该公司信息为空~~~~~</div>");
             }
 
             // 初始化分时图
