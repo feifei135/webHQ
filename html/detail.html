@@ -161,35 +161,33 @@
     <script type="text/javascript" src="../js/moment-with-locales.min.js"></script>
     <script type="text/javascript" src="../js/echarts.min.js"></script>
     <script type="text/javascript" src="../js/main.js"></script>
-    <script src="../js/kline.js"></script> <!-- K线 -->
-    <script type="text/javascript" src="../js/detail.js"></script>
+    
     <script type="text/javascript" src="../js/utils.js"></script>
-    <!-- <script type="text/javascript" src="./js/socket.js"></script> -->
+
+    <script src="../js/public.js"></script> <!--函数方法-->
+    <script src="../js/websocket.js"></script> <!--函数方法-->
+    <script src="../js/kline.js"></script> <!-- K线 -->
+    <script src="../js/detail.js"></script> <!--此页的方法-->
+    
 
 
     <script>
         $(function(){
+            // 行情echarts切换标签
             $(".container").toggleLi(
                 {
                     data:[
                         {name:"分时",id:"mline"},
-                        // {name:"5日"},
-                        // {name:"年线"},
                         {name:"日K",id:"day"},
-                        {name:"分钟",id:"minute"},
-                        // {name:"周K"},
-                        // {name:"月K"},
-                        // {name:"5分钟"},
-                        // {name:"15分钟"},
-                        // {name:"30分钟"},
-                        // {name:"60分钟"}
+                        {name:"分钟",id:"minute"}
                     ]
                 }
             );
             $(".chartsTab").chartsTab();
 
+            //指数与个股区分
             var url = location.href;
-            var id,exchangeID;
+            var id,exchangeID,wsUrl,stockXMlUrl;
             if(url.indexOf("?")>-1){
                 id = getQueryString("id");//main.js里的getQueryString
                 exchangeID = getQueryString("exchangeID");
@@ -197,45 +195,43 @@
                 id = "1";
                 exchangeID = "101";
             }
-            var wsUrl;
             switch(exchangeID){
-                case "101":
-                    wsUrl = "ws://172.17.20.203:7681";
-                    break;
                 case "2":
+                    // 深交所接口
                     wsUrl = "ws://103.66.33.67:443";
+                    stockXMlUrl = "http://172.17.20.203:6789/2";
+                    // 个股需要查询企业信息，公司信息
+                    // var indId = "000001";
+                    var reqIds = ["23000171","23000138","23000164"];
+                    requireCom(reqIds);
                     break;
-                default: ;
+                case "101":;
+                default: 
+                    // 上证指数接口
+                    wsUrl = "ws://172.17.20.203:7681";
+                    stockXMlUrl = "http://172.17.20.203:6789/101";
+                    $(".bottom-bar").html("<div class='box feild-null' style='height: 560px;font-size: 20px;margin-bottom:20px'>d=====(￣▽￣*)b~~~~~指数页面该公司信息为空~~~~~</div>");
             }
 
-            $("#MLine").initMline({id:id,exchangeID:exchangeID,wsUrl:wsUrl});
+            // 初始化分时图
+            $("#MLine").initMline({
+                id:id,
+                exchangeID:exchangeID,
+                wsUrl:wsUrl,
+                stockXMlUrl:stockXMlUrl
+            });
+            
+            // 初始化K线图
             $.queryKLine({
-                "InstrumentID": id,
-                "ExchangeID":exchangeID
+                InstrumentID: id,
+                ExchangeID:exchangeID,
+                wsUrl:wsUrl,
+                stockXMlUrl:stockXMlUrl
             });
 
-            var loc = window.location.href.split("?")[1];
-
-            if(!loc){
-                $(".bottom-bar").html("<div class='box feild-null' style='height: 560px;font-size: 16px;margin-bottom:20px'>指数页面该模块信息为空</div>")
-            }
-            /*
-            * 个股信息
-            */
-            var indId = "000001";
-            var reqIds = ["23000171","23000138","23000164"];
-            requireCom(loc,indId,reqIds);
             $("#kline").hide();
-        });
-        function tabLi(index){
-            if(index==0){
-                $("#MLine").show();
-                $("#kline").hide();
-            }else{
-                $("#kline").show();
-                $("#MLine").hide();
-            }
-        }
+
+        }); 
     </script>
 </body>
 </html>
