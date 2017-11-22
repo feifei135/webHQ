@@ -164,9 +164,9 @@
                 compareTime(exponentDateTime,_options);
 
                 // 1109新增: 获取交易名字和小数位数
-                getFieldNameAndDemical(allZSCode,_options.id);
-                // 1113新增: 获取交易名字和小数位数
-                // getFieldNameAndDemical(allZSCode,_options.id);
+                getStockInfo(allZSCode,_options.id);
+                
+                
 
                 socket = new WebSocketConnect(_options);
                 var ws = socket.createWebSocket();
@@ -1364,6 +1364,8 @@
                     end: 100
                 });    
             }
+
+
         }
     }
 
