@@ -40,12 +40,13 @@
             <div class="box fl echarts">
                 <div class="container">
                     <div class="canvas" id="MLine">
-                        <label class="canvasTitle" id="toolContent_M"><i>2017-10-10 10:00</i>价<i>-</i>量<i>-</i>幅<i>-</i></label>
+                        <div style="font-size:18px;padding-top: 40px;" id="noData">亲，暂时没有数据哦~~~~ ^_^</div>
+                        <label class="canvasTitle" id="toolContent_M" style="display:none;"><i>2017-10-10 10:00</i>价<i>-</i>量<i>-</i>幅<i>-</i></label>
                         <div id="main1" style="width:840px;height:520px;background-color:#fff;"></div>
-                        <div class="vol vol1">Vol:<i>-</i></div>
+                        <div class="vol vol1" style="display:none;">Vol:<i>-</i></div>
                         <label class="quantityRatio">LB:<i id="quantityRatio">0.86</i></label>
                         <label class="quantityRatio">MACD:<i id="quantityRatio">0.86</i></label>
-                        <div class="chartsTab"></div>
+                        <div class="chartsTab" style="display:none;"></div>
                     </div>
 
                     <!--K线图开始-->
@@ -197,18 +198,25 @@
                 id = "1";
                 exchangeID = "101";
             }
-            var wsUrl;
+            var wsUrl,stockXMlUrl;
             switch(exchangeID){
                 case "101":
                     wsUrl = "ws://172.17.20.203:7681";
+                    stockXMlUrl = "http://172.17.20.203:6789/101";
                     break;
                 case "2":
                     wsUrl = "ws://103.66.33.67:443";
+                    stockXMlUrl = "http://172.17.20.203:6789/2";
                     break;
                 default: ;
             }
 
-            $("#MLine").initMline({id:id,exchangeID:exchangeID,wsUrl:wsUrl});
+            $("#MLine").initMline({
+                id:id,
+                exchangeID:exchangeID,
+                wsUrl:wsUrl,
+                stockXMlUrl:stockXMlUrl
+            });
             $.queryKLine({
                 "InstrumentID": id,
                 "ExchangeID":exchangeID
