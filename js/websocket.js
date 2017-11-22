@@ -29,7 +29,7 @@ WebSocketConnect.prototype = {
 
 						        // this.initEvent(ws, this);
 						        // ws.WebSocketResponse();
-						        WebSocketResponse.call(ws)
+						        WebSocketResponse.call(ws,socket);
 
 						        this.lockReconnect = false;
 						        console.log("重连中……");
@@ -61,22 +61,25 @@ WebSocketConnect.prototype = {
 
 
 // websocket连接终端
-var WebSocketResponse = function() {
+var WebSocketResponse = function(option,socket) {
+
+	var reqOpt = option;
+	var socket = socket;
 
 	this.onclose = 	function () {
 		console.log("终端重连……");
-	    socket.reconnect(this.reqOpt.wsUrl); //终端重连
+	    socket.reconnect(reqOpt.wsUrl); //终端重连
 	};
 	this.onerror = 	function () {
 		console.log("报错重连……");
-	    socket.reconnect(this.reqOpt.wsUrl); //报错重连
+	    socket.reconnect(reqOpt.wsUrl); //报错重连
 	};
 	this.onopen =  	function () {
 		console.log("open");
 	    //心跳检测重置
 	    socket.reset().start(); 				// 第一次建立连接则启动心跳包
 		
-		socket.request(this.reqOpt.HistoryKQAll);
+		socket.request(reqOpt.HistoryKQAll);
 	};
 	this.onmessage = function (evt) {
 
@@ -101,11 +104,11 @@ var WebSocketResponse = function() {
 		                KCharts(dataList);
 	                    break;
 	                case "R213":        // 分钟K线历史数据查询
-	                 	socket.request(this.reqOpt.KQAll);	 	// 订阅当前日期K线=分钟K线
+	                 	socket.request(reqOpt.KQAll);	 	// 订阅当前日期K线=分钟K线
 	                 	KCharts(dataList, "history");
 	                 	break;
 	                case "R211":        // 日K线历史数据查询
-	                 	socket.request(this.reqOpt.KKZQAll);	 // 订阅当前日期K线=快照
+	                 	socket.request(reqOpt.KKZQAll);	 // 订阅当前日期K线=快照
 	                 	KCharts(dataList, "history");
 	                    break;    
 	                case "R646":  //心跳包
