@@ -1,13 +1,14 @@
+
 // websocket请求连接
 var WebSocketConnect = function(wcObj){
 	this.ws = null;
 	this.lockReconnect = false,
-	this.timeout = 60000,//60秒
+	this.timeout = 600,//60秒
 	this.timeoutObj = null,
 	this.serverTimeoutObj = null,
 	this.wsUrl = wcObj.wsUrl,
 	this.HeartSend = wcObj.HeartSend;
-}
+};
 // websocket连接方法
 WebSocketConnect.prototype = {
 	//建立socket连接
@@ -16,20 +17,19 @@ WebSocketConnect.prototype = {
 						        this.ws = new WebSocket(this.wsUrl);
 						        return this.ws;
 						    } catch (e) {
-						        this.reconnect(this.wsUrl); //如果失败重连
+						        this.reconnect(); //如果失败重连
 						    }
 						},
 	//socket重连
-	reconnect: 			function (wsUrl) {
-						    if (this.lockReconnect) return;
-						    this.lockReconnect = true;
+	reconnect: 			function () {
+						    if (socket.lockReconnect) return;
+						    socket.lockReconnect = true;
 						    //没连接上会一直重连，设置延迟避免请求过多
 						    setTimeout(function () {
-						        var ws = this.createWebSocket(wsUrl);
-
+						        var ws = socket.createWebSocket(socket.wsUrl);
 						        // this.initEvent(ws, this);
 						        // ws.WebSocketResponse();
-						        WebSocketResponse.call(ws,socket);
+						        WebSocketResponse();
 
 						        this.lockReconnect = false;
 						        console.log("重连中……");
@@ -61,27 +61,26 @@ WebSocketConnect.prototype = {
 
 
 // websocket连接终端
-var WebSocketResponse = function(option,socket) {
+var WebSocketResponse = function(option) {
 
 	var reqOpt = option;
-	var socket = socket;
 
-	this.onclose = 	function () {
+	ws.onclose = 	function () {
 		console.log("终端重连……");
-	    socket.reconnect(reqOpt.wsUrl); //终端重连
+	    socket.reconnect(); //终端重连
 	};
-	this.onerror = 	function () {
+	ws.onerror = 	function () {
 		console.log("报错重连……");
-	    socket.reconnect(reqOpt.wsUrl); //报错重连
+	    socket.reconnect(); //报错重连
 	};
-	this.onopen =  	function () {
+	ws.onopen =  	function () {
 		console.log("open");
 	    //心跳检测重置
 	    socket.reset().start(); 				// 第一次建立连接则启动心跳包
 		
 		socket.request(reqOpt.HistoryKQAll);
 	};
-	this.onmessage = function (evt) {
+	ws.onmessage = function (evt) {
 
 		console.log("打开成功");
 
