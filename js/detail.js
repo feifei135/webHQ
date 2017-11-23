@@ -27,7 +27,7 @@ function setFieldInfo(data,yc){
     
 }
 function fillFieldInfo(yc){
-    $(".tb-fn-title").text(FieldInfo.fName+"("+FieldInfo.fFiledCode+"."+FieldInfo.fInstrCode+")");
+    // $(".tb-fn-title").text(FieldInfo.fName+"("+FieldInfo.fFiledCode+"."+FieldInfo.fInstrCode+")");
     $(".tb-fn-num span:eq(0)").text(floatFixedDecimal(FieldInfo.fLastPrice))
             .attr("class",(FieldInfo.fLastPrice-yc)>0?"red":"green");
     $(".tb-fn-num span:eq(1)").text(floatFixedDecimal(FieldInfo.fZD))
@@ -74,7 +74,7 @@ function getStockInfo(_codeList,id){
             FieldInfo.fFiledCode = $(this).attr("code");
         };
     });
-
+    $(".tb-fn-title").text(FieldInfo.fName+"("+FieldInfo.fFiledCode+"."+FieldInfo.fInstrCode+")");
     // 个股需要查询企业信息，公司信息
     var reqIds = ["23000171","23000138","23000164"];
     requireCom(reqIds);
@@ -149,7 +149,7 @@ var requireCom = function(reqIds){
 
                     }
                 }else{
-                    $(".bottom-bar").html("<div class='box feild-null' style='height: 560px;font-size: 20px;margin-bottom:20px'>d=====(￣▽￣*)b~~~~~指数页面该公司信息为空~~~~~</div>");
+                    $(".bottom-bar").html("<div class='box feild-null' style='height: 560px;font-size: 20px;margin-bottom:20px'>指数页面该公司信息为空~~~~~^_^</div>");
                 } 
             }
         });
@@ -178,7 +178,7 @@ var requireCom = function(reqIds){
                 // 拼接字符串
                 setInfo(comList);
             }else{
-                $(".bottom-bar").html("<div class='box feild-null' style='height: 560px;font-size: 20px;margin-bottom:20px'>d=====(￣▽￣*)b~~~~~指数页面该公司信息为空~~~~~</div>");
+                $(".bottom-bar").html("<div class='box feild-null' style='height: 560px;font-size: 20px;margin-bottom:20px'>指数页面该公司信息为空~~~~~^_^</div>");
             }
         }
     });
@@ -312,8 +312,9 @@ function setfillZBCJ(data){
                         <ul>"+text+"</ul>";
     $(".cb-cj").html(innerHtmlStr);
 
-    if($(".cb-cj li").length>1){
-        $(".cb-cj li:gt(0)").remove();
+    // 保留5条
+    if($(".cb-cj li").length>5){
+        $(".cb-cj li:gt(4)").remove();
     }
 
-}
+}0
