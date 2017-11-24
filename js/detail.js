@@ -18,23 +18,6 @@ var FieldInfo = {
     fHSRate: null,       // 换手率
     fZF: null            // 振幅   ---今日-快照
 }
-function setFieldInfo(data,yc){
-    if(data){
-        FieldInfo.fLastPrice = data.Price;
-        FieldInfo.fZD = FieldInfo.fLastPrice - yc;
-        FieldInfo.fZDF = floatFixedTwo((FieldInfo.fZD/yc)*100);
-    }
-    
-}
-function fillFieldInfo(yc){
-    // $(".tb-fn-title").text(FieldInfo.fName+"("+FieldInfo.fFiledCode+"."+FieldInfo.fInstrCode+")");
-    $(".tb-fn-num span:eq(0)").text(floatFixedDecimal(FieldInfo.fLastPrice))
-            .attr("class",(FieldInfo.fLastPrice-yc)>0?"red":"green");
-    $(".tb-fn-num span:eq(1)").text(floatFixedDecimal(FieldInfo.fZD))
-            .attr("class",(FieldInfo.fLastPrice-yc)>0?"red":"green");
-    $(".tb-fn-num span:eq(2)").text(FieldInfo.fZDF+"%")
-            .attr("class",(FieldInfo.fLastPrice-yc)>0?"red":"green");
-}
 function setKZFieldInfo(data){
     if(data){
         FieldInfo.fHighest = data.High;
@@ -47,23 +30,35 @@ function setKZFieldInfo(data){
         // FieldInfo.fMarketValue = data.fMarketValue;
         // FieldInfo.fHSRate = data.fHSRate;
         FieldInfo.fZF = FieldInfo.fHighest - FieldInfo.fLowest;
+
+        FieldInfo.fLastPrice = data.Last;
+        FieldInfo.fZD = FieldInfo.fLastPrice - FieldInfo.fYCPrice;
+        FieldInfo.fZDF = floatFixedTwo((FieldInfo.fZD/FieldInfo.fYCPrice)*100);
     }
 }
-function fillKZFieldInfo(yc){
+function fillKZFieldInfo(){
 
     $(".tb-fielList li:eq(0) span").text(floatFixedDecimal(FieldInfo.fHighest))
-            .attr("class",(FieldInfo.fHighest-yc)>0?"red":"green");
+            .attr("class",(FieldInfo.fHighest-FieldInfo.fYCPrice)>0?"red":"green");
     $(".tb-fielList li:eq(1) span").text(floatFixedDecimal(FieldInfo.fOpen))
-            .attr("class",(FieldInfo.fOpen-yc)>0?"red":"green");
+            .attr("class",(FieldInfo.fOpen-FieldInfo.fYCPrice)>0?"red":"green");
     $(".tb-fielList li:eq(2) span").text(floatFixedDecimal(FieldInfo.fVolumnValue));
     // $(".tb-fielList li:eq(3) span").text();
     // $(".tb-fielList li:eq(4) span").text(111);
     $(".tb-fielList li:eq(5) span").text(floatFixedDecimal(FieldInfo.fLowest))
-            .attr("class",(FieldInfo.fLowest-yc)>0?"red":"green");
+            .attr("class",(FieldInfo.fLowest-FieldInfo.fYCPrice)>0?"red":"green");
     $(".tb-fielList li:eq(6) span").text(floatFixedDecimal(FieldInfo.fYCPrice));
     $(".tb-fielList li:eq(7) span").text(floatFixedTwo(FieldInfo.fVolumnNum));
     // $(".tb-fielList li:eq(8) span").text();
     $(".tb-fielList li:eq(9) span").text(floatFixedDecimal(FieldInfo.fZF));
+
+
+    $(".tb-fn-num span:eq(0)").text(floatFixedDecimal(FieldInfo.fLastPrice))
+            .attr("class",(FieldInfo.fLastPrice-FieldInfo.fYCPrice)>0?"red":"green");
+    $(".tb-fn-num span:eq(1)").text(floatFixedDecimal(FieldInfo.fZD))
+            .attr("class",(FieldInfo.fLastPrice-FieldInfo.fYCPrice)>0?"red":"green");
+    $(".tb-fn-num span:eq(2)").text(FieldInfo.fZDF+"%")
+            .attr("class",(FieldInfo.fLastPrice-FieldInfo.fYCPrice)>0?"red":"green");
 }
 function getStockInfo(_codeList,id){
     $.each(_codeList,function(){
@@ -291,7 +286,7 @@ function setUnit(data){
 function setPKAndZBHtml(obj, status, data){
     if(data){
         var txtData = "<span class="+((data.Price-FieldInfo.fYCPrice)>0?"red":"green")+">"+floatFixedTwo(data.Price)+"</span>\
-                       <span>"+data.Volume+"</span>";
+                       <span>"+Math.round(data.Volume/100)+"</span>";
     }else{
         var txtData = "<span>--</span><span>--</span>";
     }
@@ -305,7 +300,9 @@ function setfillZBCJ(data){
     var text = $(".cb-cj ul")[0]?$(".cb-cj ul").html():"";
 
     $.each(data,function(i,obj){
-        text = "<li><span>"+formatTimeSec(obj.MarketTime)+"</span><span>"+floatFixedTwo(obj.RecorePrice)+"</span><span>"+obj.Volume+"</span></li>"+text;
+        var abside = (obj.ABSide==83)?("<span class='green'>卖出</span>"):((obj.ABSide==66)?("<span class='red'>买入</span>"):"");
+        // var abside = (obj.ABSide==83)?("<span class='green'>S</span>"):("<span class='red'>B</span>");
+        text = text + "<li><span>"+formatTimeSec(obj.MarketTime)+"</span><span>"+floatFixedTwo(obj.RecorePrice)+"</span><span>"+Math.round(obj.Volume/100)+"</span>"+abside+"</li>";
     });
 
     var innerHtmlStr = "<h2>逐笔成交</h2>\
@@ -314,7 +311,8 @@ function setfillZBCJ(data){
 
     // 保留5条
     if($(".cb-cj li").length>5){
-        $(".cb-cj li:gt(4)").remove();
+        // console.log($(".cb-cj li").length-1)
+        $(".cb-cj li:lt("+($(".cb-cj li").length-5)+")").remove();
     }
 
 }0

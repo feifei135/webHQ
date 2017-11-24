@@ -47,6 +47,9 @@
             var ws = $this.createWebSocket(_this.wsUrl);
             var initXML = new InitXMLIChart(_this);
             // myChart.dispose();
+            yc = 0;
+            initXML.options.c_data=[];
+            initXML.options.v_data=[];
             initEvent(ws,initXML);
             _this.lockReconnect = false;
         }, 2000);
@@ -165,8 +168,6 @@
 
                 // 1109新增: 获取交易名字和小数位数
                 getStockInfo(allZSCode,_options.id);
-                
-                
 
                 socket = new WebSocketConnect(_options);
                 var ws = socket.createWebSocket();
@@ -191,23 +192,10 @@
                     endTime = st.split("-")[1];
                     startTime1 = et.split("-")[0];
                     endTime1 = et.split("-")[1];
-                    // json = {
-                    //     id:ids,
-                    //     name:names,
-                    //     startTime:startTime,
-                    //     endTime:endTime,
-                    //     startTime1:startTime1,
-                    //     endTime1:endTime1,
-                    //     decimalCount:decimalCount,
-                    //     type:type
-                    // };
-                    // exponentDateTime.push(json);
                 }else{
                     startTime = _codeList[i].attributes["ts"].value.split("-")[0];
                     endTime = _codeList[i].attributes["ts"].value.split("-")[1];
                     startTime1 = endTime1 = "";
-                    // names = _codeList[i].attributes["name"].value;
-                    // ids = _codeList[i].attributes["id"].value;
                 }
                 json = {
                     id:ids,
@@ -244,23 +232,10 @@
                     if($($(_codeList[i]).parent("product")[0]).attr("name") == "指数"){
                         startTime1  = startTime1.split(":")[0] +":"+ parseInt(startTime1.split(":")[1])+"1";
                     }
-                    // json = {
-                    //     id:ids,
-                    //     name:names,
-                    //     startTime:startTime,
-                    //     endTime:endTime,
-                    //     startTime1:startTime1,
-                    //     endTime1:endTime1,
-                    //     decimalCount:decimalCount,
-                    //     type:type              
-                    // };
-                    // exponentDateTime.push(json);
                 }else{
                     startTime = elValue.split("-")[0];
                     endTime = elValue.split("-")[1];
                     startTime1 = endTime1 = "";
-                    // names = _codeList[i].attributes["name"].value;
-                    // ids = _codeList[i].attributes["id"].value;
                 }
                 json = {
                     id:ids,
@@ -273,7 +248,6 @@
                     type:type
                 };
                 exponentDateTime.push(json);
-                // }
             }
         }
         return exponentDateTime;
@@ -375,7 +349,7 @@
                         fillKZFieldInfo(yc)
                         return;
                     }
-                    fillKZFieldInfo(yc)
+                    fillKZFieldInfo(yc);
                     // 接口变更  日期为前一天
                     // todayDate = formatDate(data[0].Date + sub);
                 break;
@@ -385,7 +359,10 @@
                     }
                 break;
                 case "Q640"://清盘
-                    redrawChart(data,$this);
+                    var MarketStatus = data["MarketStatus"] || data[0]["MarketStatus"];
+                    if(MarketStatus == 1){//收到清盘指令  操作图表
+                        redrawChart(data,$this);
+                    }
                 break;
                 case "Q617"://五档盘口
                     // 1120新增
@@ -533,7 +510,8 @@
                     myChart.setOption({
                         xAxis:[{
                             data:$this.v_data
-                        },{
+                        },
+                        {
                             data:$this.v_data
                         }],
                         series: [
@@ -573,20 +551,90 @@
                     var price = [];//价格
                     var volume = [];//成交量
                     var zdfData = [];//涨跌幅
-                    $.each(data, function (i, o) {
-                        var fvalue,r1;
-                        fvalue = parseFloat(o.Price);//价格
-                        price.push(o.Price);
-                        volume.push(o.Volume);
-                        zdfData.push((((fvalue-parseFloat(yc))/parseFloat(yc))* 100).toFixed(2));
-                        if(fvalue > 0){
-                            r1 = Math.abs(fvalue - parseFloat(yc));
-                            if (r1 > $this.interval) {
-                                $this.interval = r1;
+                    var dateL,timeL,timeStamp;
+                    $this.v_data = getxAxis(data[0].Date,$this);
+                    
+                    var lastTime = moment(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)).utc().valueOf();//最后一个时间点
+                    var firstTime = moment(formatDate(data[0].Date) +" "+formatTime(data[0].Time)).utc().valueOf();//第一个时间点
+                    // if($this.c_data[0] == firstTime){
+                    //     $.each(data, function (i, o) {
+                    //         var fvalue,r1;
+                    //         fvalue = parseFloat(o.Price);//价格
+                    //         price.push(o.Price);
+                    //         volume.push(o.Volume);
+                    //         zdfData.push((((fvalue-parseFloat(yc))/parseFloat(yc))* 100).toFixed(2));
+                    //         if(fvalue > 0){
+                    //             r1 = Math.abs(fvalue - parseFloat(yc));
+                    //             if (r1 > $this.interval) {
+                    //                 $this.interval = r1;
+                    //             }
+                    //         }
+                    //     });
+                    // }else if(firstTime > $this.c_data[0]){
+                    //     for(var i = 0;i<$this.c_data.length;i++){
+                    //         if(firstTime>$this.c_data[i]){
+                    //             price[i] = null;
+                    //             volume[i] = null;
+                    //             zdfData[i] = null;
+                    //         }else if(firstTime==$this.c_data[i]){
+                    //             $.each(data, function (j, o) {
+                    //                 // 中间有断开 补空值 
+                    //                 // var dateL = moment(formatDate(o.Date) +" "+formatTime(o.Time)).utc().valueOf();
+                    //                 // if(dateL != $this.c_data[i]){
+                    //                 //     price.push(null);
+                    //                 //     volume.push(null);
+                    //                 //     zdfData.push(null);
+                    //                 // }else{
+                    //                     var fvalue,r1;
+                    //                     fvalue = parseFloat(o.Price);//价格
+                    //                     price.push(o.Price);
+                    //                     volume.push(o.Volume);
+                    //                     zdfData.push((((fvalue-parseFloat(yc))/parseFloat(yc))* 100).toFixed(2));
+                    //                     if(fvalue > 0){
+                    //                         r1 = Math.abs(fvalue - parseFloat(yc));
+                    //                         if (r1 > $this.interval) {
+                    //                             $this.interval = r1;
+                    //                         }
+                    //                     }
+                    //                 // }
+                    //                 // return false;
+                    //             });
+                    //             break;
+                    //         }else{
+                    //             price[i] = null;
+                    //             volume[i] = null;
+                    //             zdfData[i] = null;
+                    //         }
+                    //     }
+                    // }
+                    var lastDate = moment(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)).utc().valueOf();
+                    for(var i=0;i<$this.c_data.length;i++){
+                        if(lastDate < $this.c_data[i]){
+                            break;
+                        }
+                        for(var j=0;j<data.length;j++){
+                            var dateStamp = moment(formatDate(data[j].Date) +" "+formatTime(data[j].Time)).utc().valueOf();
+                            if($this.c_data[i] == dateStamp){
+                                var fvalue,r1;
+                                fvalue = parseFloat(data[j].Price);//价格
+                                price[i] = (data[j].Price);
+                                volume[i] = (data[j].Price);
+                                zdfData[i] = ((((fvalue-parseFloat(yc))/parseFloat(yc))* 100).toFixed(2));
+                                if(fvalue > 0){
+                                    r1 = Math.abs(fvalue - parseFloat(yc));
+                                    if (r1 > $this.interval) {
+                                        $this.interval = r1;
+                                    }
+                                }
+                                break;
+                            }else{
+                                price[i] = null;
+                                volume[i] = null;
+                                zdfData[i] = null;
                             }
                         }
-                    });
-
+                    }
+                        
                     $this.history_data = price;//价格历史数据
                     $this.z_history_data = zdfData;//涨跌幅历史数据
                     $this.a_history_data = volume;//成交量历史数据
@@ -615,8 +663,6 @@
 
                     var split = parseFloat(((maxY - minY) / 6).toFixed(4));
                     var split1 = parseFloat(((maxY1 - minY1) / 6).toFixed(4));
-                    // var date = moment(parseFloat(datatime)).format("YYYY-MM-DD");
-                    $this.v_data = getxAxis(data[0].Date,$this);
                     var option = {
                         animation: false,
                         grid: [
@@ -1057,6 +1103,10 @@
                                 type: 'line',
                                 showSymbol: false,
                                 hoverAnimation: false,
+                                // encode:{
+                                //     x:1,
+                                //     y:0
+                                // },
                                 data: price,
                                 connectNulls:true,
                                 symbolSize:0,
@@ -1279,11 +1329,6 @@
             }
         }
 
-        // 1109新增：设置页面中顶部指数信息
-        if(data){
-            setFieldInfo(data[data.length-1],yc);
-        }
-        fillFieldInfo(yc);
     }
 
     $(document).keyup(function (e) {

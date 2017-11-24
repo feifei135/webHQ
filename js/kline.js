@@ -410,7 +410,7 @@ var KLineRequireOpt = function(option, klineType){
 			MsgType: "C211",  
 			StartIndex: "-1", 
 			StartDate: "0", 
-			Count: "201" 
+			Count: "200" 
 		},
 		KQAll: {				// 订阅分钟K线
 			InstrumentID: InstrumentID,
@@ -535,7 +535,7 @@ function splitData(data, isHistory) {
             if(data.length>2){
                 e_volume = (e_price-e_open)>0?[i,object.Volume,-1]:[i,object.Volume,1];   // 成交量-数组，存储索引，值，颜色对应的值                         
             }else{
-                e_volume = (e_price-e_open)>0?[KLineData.hVolumesList.length-1,object.Volume,-1]:[KLineData.hVolumesList.length-1,object.Volume,1];
+                e_volume = (e_price-e_open)>0?[KLineData.hVolumesList.length,object.Volume,-1]:[KLineData.hVolumesList.length,object.Volume,1];
             }
         switch(KLineData.lineType){
             case "minute":
@@ -603,8 +603,12 @@ function saveData(data, isHistory){
 		var n_zf = data.amplitude[0];
 		var n_zfList = data.amplPercent[0];
 		var lastTime = KLineData.hCategoryList[KLineData.hCategoryList.length-1];
+
 		// 最新一条是历史category数据中的最后一条，则更新最后一条数据,否则push到数组里面
 		if(n_category.toString() == lastTime){
+
+			n_volumes[0] = n_volumes[0]-1;
+
 			KLineData.hValuesList[KLineData.hValuesList.length-1] = n_values;
 			KLineData.hVolumesList[KLineData.hVolumesList.length-1] = n_volumes;
 			KLineData.hZValuesList[KLineData.hZValuesList.length-1] = n_zValues;
