@@ -411,19 +411,22 @@
             $("#toolContent_M").show();
             $(".vol").show();
             $(".chartsTab").show();
+            yc = parseFloat(yc);
+            var limitUp = yc + yc*0.1;
+            var limitDown = yc - yc*0.1;
             if(type == "add"){
                 if(myChart != undefined){
-                    yc = parseFloat(yc);
+                    // yc = parseFloat(yc);
                     var a_lastData = data;
                     var last_dataTime = formatTime(a_lastData[0].Time);//moment(parseFloat(a_lastData[0].Time + "000")).format("HH:mm"); //行情最新时间
                     var last_date = dateToStamp(formatDate(a_lastData[0].Date) +" " + last_dataTime);
                     var zVale = parseFloat(((parseFloat(a_lastData[0].Price) - parseFloat(yc)) / parseFloat(yc) * 100).toFixed(2)); //行情最新涨跌幅
                     var aValue = parseFloat(a_lastData[0].Volume); //最新成交量
 
-                    if((parseFloat(a_lastData[0].Price)) > (yc + yc*0.03).toFixed($this.decimal)){
-                        a_lastData[0].Price = (yc + yc*0.03).toFixed($this.decimal);
-                    }else if((parseFloat(a_lastData[0].Price)) < (yc - yc*0.03).toFixed($this.decimal)){
-                        a_lastData[0].Price = (yc - yc*0.03).toFixed($this.decimal);
+                    if((parseFloat(a_lastData[0].Price)) >= limitUp){
+                        a_lastData[0].Price = limitUp.toFixed($this.decimal);
+                    }else if((parseFloat(a_lastData[0].Price)) <= limitDown){
+                        a_lastData[0].Price = limitDown.toFixed($this.decimal);
                     }
 
                     for(var i=0;i<$this.c_data.length;i++){
@@ -504,7 +507,11 @@
                             seriesIndex: 0,
                             dataIndex: mouseHoverPoint,
                             name: "Mline",
-                            position: ['50%', '50%']
+                            position: function (pos, params, el, elRect, size) {
+                                var obj = {top: 10};
+                                obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 30;
+                                return obj;
+                            }  //['50%', '50%']
                         });
                     }
                     myChart.setOption({
@@ -514,17 +521,13 @@
                         {
                             data:$this.v_data
                         }],
+                        // tooltip: {
+                        //     trigger:"axis",
+                        //     showContent:true 
+                        // },
                         series: [
                             {
                                 data: $this.history_data,
-                                // markLine: {
-                                //     data: [
-                                //         {
-                                //             name: 'Y 轴值为 100 的水平线',
-                                //             yAxis: middleY
-                                //         }
-                                //     ]
-                                // }
                             },
                             {
                                 data: $this.z_history_data
@@ -551,63 +554,12 @@
                     var price = [];//价格
                     var volume = [];//成交量
                     var zdfData = [];//涨跌幅
-                    var dateL,timeL,timeStamp;
+                    
                     $this.v_data = getxAxis(data[0].Date,$this);
                     
-                    var lastTime = moment(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)).utc().valueOf();//最后一个时间点
-                    var firstTime = moment(formatDate(data[0].Date) +" "+formatTime(data[0].Time)).utc().valueOf();//第一个时间点
-                    // if($this.c_data[0] == firstTime){
-                    //     $.each(data, function (i, o) {
-                    //         var fvalue,r1;
-                    //         fvalue = parseFloat(o.Price);//价格
-                    //         price.push(o.Price);
-                    //         volume.push(o.Volume);
-                    //         zdfData.push((((fvalue-parseFloat(yc))/parseFloat(yc))* 100).toFixed(2));
-                    //         if(fvalue > 0){
-                    //             r1 = Math.abs(fvalue - parseFloat(yc));
-                    //             if (r1 > $this.interval) {
-                    //                 $this.interval = r1;
-                    //             }
-                    //         }
-                    //     });
-                    // }else if(firstTime > $this.c_data[0]){
-                    //     for(var i = 0;i<$this.c_data.length;i++){
-                    //         if(firstTime>$this.c_data[i]){
-                    //             price[i] = null;
-                    //             volume[i] = null;
-                    //             zdfData[i] = null;
-                    //         }else if(firstTime==$this.c_data[i]){
-                    //             $.each(data, function (j, o) {
-                    //                 // 中间有断开 补空值 
-                    //                 // var dateL = moment(formatDate(o.Date) +" "+formatTime(o.Time)).utc().valueOf();
-                    //                 // if(dateL != $this.c_data[i]){
-                    //                 //     price.push(null);
-                    //                 //     volume.push(null);
-                    //                 //     zdfData.push(null);
-                    //                 // }else{
-                    //                     var fvalue,r1;
-                    //                     fvalue = parseFloat(o.Price);//价格
-                    //                     price.push(o.Price);
-                    //                     volume.push(o.Volume);
-                    //                     zdfData.push((((fvalue-parseFloat(yc))/parseFloat(yc))* 100).toFixed(2));
-                    //                     if(fvalue > 0){
-                    //                         r1 = Math.abs(fvalue - parseFloat(yc));
-                    //                         if (r1 > $this.interval) {
-                    //                             $this.interval = r1;
-                    //                         }
-                    //                     }
-                    //                 // }
-                    //                 // return false;
-                    //             });
-                    //             break;
-                    //         }else{
-                    //             price[i] = null;
-                    //             volume[i] = null;
-                    //             zdfData[i] = null;
-                    //         }
-                    //     }
-                    // }
                     var lastDate = moment(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)).utc().valueOf();
+                    
+                    var maxPrice=minPrice=parseFloat(data[0].Price);//找出最大值和最小值
                     for(var i=0;i<$this.c_data.length;i++){
                         if(lastDate < $this.c_data[i]){
                             break;
@@ -615,13 +567,20 @@
                         for(var j=0;j<data.length;j++){
                             var dateStamp = moment(formatDate(data[j].Date) +" "+formatTime(data[j].Time)).utc().valueOf();
                             if($this.c_data[i] == dateStamp){
-                                var fvalue,r1;
-                                fvalue = parseFloat(data[j].Price);//价格
-                                price[i] = (data[j].Price);
-                                volume[i] = (data[j].Price);
-                                zdfData[i] = ((((fvalue-parseFloat(yc))/parseFloat(yc))* 100).toFixed(2));
+                                var fvalue = parseFloat(data[j].Price);//价格
+                                if(data[j].Price >= limitUp){
+                                    price[i] = limitUp;
+                                    zdfData[i] = 0.10;
+                                }else if(data[j].Price <= limitDown){
+                                    price[i] = limitDown;
+                                    zdfData[i] = 0.10;
+                                }else{
+                                    price[i] = data[j].Price;
+                                    zdfData[i] = (((fvalue-yc)/yc)* 100).toFixed(2);
+                                }
+                                volume[i] = data[j].Volume;
                                 if(fvalue > 0){
-                                    r1 = Math.abs(fvalue - parseFloat(yc));
+                                    r1 = Math.abs(fvalue - yc);
                                     if (r1 > $this.interval) {
                                         $this.interval = r1;
                                     }
@@ -638,14 +597,13 @@
                     $this.history_data = price;//价格历史数据
                     $this.z_history_data = zdfData;//涨跌幅历史数据
                     $this.a_history_data = volume;//成交量历史数据
-                    
                     //取绝对值  差值 
-                    $this.interval = $this.interval*2;
-                    yc = parseFloat(yc);
+                    $this.interval =$this.interval + $this.interval*0.1;
                     if (yc) {
-                        var minY = (yc - $this.interval).toFixed($this.decimal);
+                        var minY = (yc - $this.interval).toFixed($this.decimal);//(minPrice - r1).toFixed($this.decimal);//(yc - $this.interval).toFixed($this.decimal);
                         var middleY = yc.toFixed($this.decimal);
-                        var maxY = (yc + $this.interval).toFixed($this.decimal);
+                        var maxY = (yc + $this.interval).toFixed($this.decimal);//(maxPrice + r1).toFixed($this.decimal);//(yc + $this.interval).toFixed($this.decimal);
+
 
                         var dd = ((parseFloat(minY) - (yc)) / (yc) );//* 100);
                         if(Math.abs(dd) > 1){
@@ -698,66 +656,7 @@
                         },
                         tooltip: {
                             trigger: 'axis',
-                            triggerOn:"mousemove",
-                            backgroundColor:'#fff',
-                            borderWidth: 1,
-                            borderColor: '#b4b4b4',
-                            padding:[0,10],
-                            textStyle:{
-                                color:colorList[2],
-                                fontSize:14
-                            },
-                            extraCssText:'border-radius:0px',
-                            position: function (pos, params, el, elRect, size) {
-                                var obj = {top: 10};
-                                obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 30;
-                                return obj;
-                            },
-                            formatter: function (params) {
-                                var paramsTime = params[0]["axisValue"];
-                                var paramsData = params[0]["data"];
-                                var paramsVolume = params[1]["data"];
-                                var tpl = "<label style='text-align:left;display:block;line-height:40px;height:40px;'>"+FieldInfo.fName+"</label>";
-                                tpl += "<label style='display:block;line-height:20px;height:20px;'>" + paramsTime + "</label>";
-                                $.each(params,function(i,items){
-                                    switch (items.seriesName){
-                                        case "Mline":
-                                        tpl += "<label style='display:block;text-align:left;line-height:30px;'> <i style='width:30px;'>价格</i>";
-                                        if(items.value >= yc){
-                                            tpl += "<i style='color:#e22f2a;float:right;'>" + (items.value?items.value:"") + "</i>";
-                                        }else{
-                                            tpl += "<i style='color:#3bc25b;float:right;'>" + (items.value || items.value==0?items.value:"") + "</i>";
-                                        }
-                                        tpl += "</label>";
-                                        break;
-                                        case "limit":
-                                        tpl += "<label style='display:block;text-align:left;line-height:30px;'> <i style='width:30px;'>涨跌幅</i>";
-                                        if(items.value >= 0){
-                                            tpl += "<i style='color:#e22f2a;float:right;'>" +(items.value?items.value:"") + "%</i>";
-                                        }else{
-                                            tpl += "<i style='color:#3bc25b;float:right;'>" + (items.value || items.value==0?items.value:"") + "%</i>";
-                                        }
-                                        tpl += "</label>";
-                                        break;
-                                        case "Vol":
-                                        tpl += "<label style='display:block;text-align:left;line-height:30px;'> <i style='width:30px;'>成交量</i>";
-                                        if(parseFloat(items.value) < 100){
-                                            tpl += "<i style='color:#555;float:right;'>" + (parseFloat(items.value)) + "股</i>";
-                                        }else{
-                                            if(parseFloat(items.value) >= 10000){
-                                                tpl += "<i style='color:#555;float:right;'>" + (parseFloat(items.value)?parseFloat(items.value)/1000000:"") + "万手</i>";
-                                            }else{
-                                                tpl += "<i style='color:#555;float:right;'>" + (parseFloat(items.value)||parseFloat(items.value)==0?parseFloat(items.value)/100:"") + "手</i>";
-                                            }
-                                        }
-                                        tpl += "</label>";
-                                        break;
-                                        default:
-                                        break;
-                                    }
-                                });
-                                return tpl;
-                            }
+                            showContent:false
                         },
                         dataZoom: [
                             {
@@ -1103,10 +1002,6 @@
                                 type: 'line',
                                 showSymbol: false,
                                 hoverAnimation: false,
-                                // encode:{
-                                //     x:1,
-                                //     y:0
-                                // },
                                 data: price,
                                 connectNulls:true,
                                 symbolSize:0,
@@ -1246,19 +1141,29 @@
                     set_marketTool(marktToolData,$this); //设置动态行情条
 
                     myChart.on('showTip', function (params) {
+                        // console.log(params);
                         mouseHoverPoint = params.dataIndex;
                         if ($this.history_data[mouseHoverPoint]) {
                             $("#toolContent_M").children().first().text(moment(parseFloat($this.c_data[mouseHoverPoint])).format("YYYY-MM-DD HH:mm"));
+                            $("#toolContent .dataTime").text(formatDate($this.c_data[mouseHoverPoint],"1"));
                             if($this.history_data[mouseHoverPoint] >= yc){
                                 $("#toolContent_M").children().eq(1).text($this.history_data[mouseHoverPoint]).css("color",colorList[0]);
                                 $("#toolContent_M").children().eq(3).text($this.z_history_data[mouseHoverPoint]).css("color",colorList[0]);
+                                // 浮窗数据
+                                $(".dataPrice").text($this.history_data[mouseHoverPoint]).css("color",colorList[0]);
+                                $(".change").text($this.z_history_data[mouseHoverPoint]).css("color",colorList[0]);
                             }else{
                                 $("#toolContent_M").children().eq(1).text($this.history_data[mouseHoverPoint]).css("color",colorList[1]);
                                 $("#toolContent_M").children().eq(3).text($this.z_history_data[mouseHoverPoint]).css("color",colorList[1]);
+                                // 浮窗数据
+                                $(".dataPrice").text($this.history_data[mouseHoverPoint]).css("color",colorList[1]);
+                                $(".change").text($this.z_history_data[mouseHoverPoint]).css("color",colorList[1]);
                             }
                             $("#toolContent_M").children().eq(2).text($this.a_history_data[mouseHoverPoint]);
                             $(".vol i").text($this.a_history_data[mouseHoverPoint]);
                             $("#quantityRatio").text($this.a_history_data[mouseHoverPoint]);
+                            $(".volume").text($this.a_history_data[mouseHoverPoint])
+                            
                         } else {
                             $("#toolContent_M").children().first().text("-");
                             $("#toolContent_M").children().eq(1).text("-");
@@ -1294,6 +1199,7 @@
                         } else {
                             $("#toolContent").css("left", continerWidth - toolContent - 60);
                         }
+                        $(".fName").text(FieldInfo.fName);
                     }
                 }else{
                     $("#noData").show();
@@ -1378,7 +1284,11 @@
                     seriesIndex: 0,
                     dataIndex: mouseHoverPoint + index,
                     name: name,
-                    position: ['50%', '50%']
+                    position: function (pos, params, el, elRect, size) {
+                        var obj = {top: 10};
+                        obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 30;
+                        return obj;
+                    }//['50%', '50%']
                 });
             } else {
                 if (index == 1) {
@@ -1445,7 +1355,11 @@
                 seriesIndex: 0,
                 dataIndex: KLineSet.mouseHoverPoint + index,
                 name: name,
-                position: ['50%', '50%']
+                position: function (pos, params, el, elRect, size) {
+                    var obj = {top: 10};
+                    obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 30;
+                    return obj;
+                }//['50%', '50%']
             });
 
         } else {
