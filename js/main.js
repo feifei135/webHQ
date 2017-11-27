@@ -77,23 +77,7 @@ function formatTime(time) {
     time = H + ":" + m;
     return time;
 }
-// 000000 -> 00:00:00 转为时分秒
-function formatTimeSec(time) {
-    time = time.toString();
-    if (time.length !== 6) {
-        var diff = 6 - (time.length);
-        var zero = "";
-        for (var i = 0; i < diff; i++) {
-            zero += "0";
-        }
-        time = zero + time;
-    }
-    var H = time.substring(0, 2);
-    var m = time.substring(2, 4);
-    var s = time.substring(4, 6)
-    time = H + ":" + m + ":" + s;
-    return time;
-};
+
 // 将"2017-01-01 02:03" 转换为时间戳 1483207380(整数)
 function dateToStamp(date){
     if(date.indexOf("-")>-1){

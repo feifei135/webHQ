@@ -5,10 +5,10 @@
 	<title>行情详情</title>
     <link rel="stylesheet" type="text/css" href="../css/echarts.css" />
     <link rel="stylesheet" type="text/css" href="../css/kline.css" />
-	<link rel="stylesheet" type="text/css" href="../css/index.css">
+    <link rel="stylesheet" type="text/css" href="../css/index.css">
 </head>
 <body>
-    <!-- 页面开始 -->
+     <!-- 页面开始 -->
     <div class="container-detail">
         <!-- 上部信息框开始 -->
         <div class="box top-bar">
@@ -172,12 +172,12 @@
     <script type="text/javascript" src="../js/echarts.min.js"></script>
     <script type="text/javascript" src="../js/main.js"></script>
     
-    <script type="text/javascript" src="../js/utils.js"></script>
+    <script type="text/javascript" src="../js/utils.js"></script><!-- 公共方法 -->
 
-    <!-- <script src="../js/public.js"></script> 函数方法 -->
-    <!-- <script src="../js/websocket.js"></script> --> <!--函数方法-->
     <script src="../js/kline.js"></script> <!-- K线 -->
-    <script src="../js/detail.js"></script> <!--此页的方法-->
+    
+
+
     <script>
         $(function(){
             // 行情echarts切换标签
@@ -194,7 +194,7 @@
 
             //指数与个股区分
             var url = location.href;
-            var id,exchangeID,wsUrl,stockXMlUrl;
+            var id, exchangeID, wsUrl, stockXMlUrl;
             if(url.indexOf("?")>-1){
                 id = getQueryString("id");//main.js里的getQueryString
                 exchangeID = getQueryString("exchangeID");
@@ -202,7 +202,7 @@
                 id = "1";
                 exchangeID = "101";
             }
-            var wsUrl,stockXMlUrl;
+            var wsUrl, stockXMlUrl;
             switch(exchangeID){
                 case "2":
                     // 深交所接口
@@ -226,6 +226,12 @@
             });
             // 初始化K线图
             $.queryKLine({
+                InstrumentID: id,
+                ExchangeID:exchangeID,
+                wsUrl:wsUrl,
+                stockXMlUrl:stockXMlUrl
+            });
+            $.queryStockInfo({
                 InstrumentID: id,
                 ExchangeID:exchangeID,
                 wsUrl:wsUrl,

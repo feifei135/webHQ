@@ -127,22 +127,6 @@
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "Instrumenttype":"4"
-            },
-            // 盘口
-            QPK : {
-                "MsgType":"S101",
-                "DesscriptionType":"3",
-                "ExchangeID":opt.exchangeID,
-                "InstrumentID":opt.id,
-                "Instrumenttype":"3"
-            },
-            // 逐笔成交
-            QZBCJ : {
-                "MsgType":"S101",
-                "DesscriptionType":"3",
-                "ExchangeID":opt.exchangeID,
-                "InstrumentID":opt.id,
-                "Instrumenttype":"1"
             }
         };
         this.options = $.extend({},this.defaults,opt);
@@ -165,9 +149,6 @@
                 var exponentDateTime = getExponentDateTime(xml,allZSCode);
                 
                 compareTime(exponentDateTime,_options);
-
-                // 1109新增: 获取交易名字和小数位数
-                getStockInfo(allZSCode,_options.id);
 
                 socket = new WebSocketConnect(_options);
                 var ws = socket.createWebSocket();
@@ -307,16 +288,6 @@
             $this.getRealTimePush();
             // 清盘
             $this.getQP();
-
-            // 指数不存在盘口数据和成交记录
-            if($this.options.exchangeID=="101"){
-                $(".cb-right").html("<div style='font-size:18px;'>指数查询无盘口信息和成交信息哟~~~~^_^</div>");
-            }else{
-                // 获取盘口数据
-                $this.getPK();
-                // 获取逐笔成交记录
-                $this.getZBCJ();
-            }
             
             //初始化报价图;
             // if(!$(".shibors").find("#mytable").length>0){
@@ -340,16 +311,12 @@
                     break;
                 case "Q619"://订阅快照
                     // $(document).trigger("SBR_HQ",data);
-                    
-                    // 1109新增: 获取最高最低成交量等信息
-                    setKZFieldInfo(data[data.length-1]);
 
                     if(!yc){
                         yc = data[0].PreClose; //获取昨收值
-                        fillKZFieldInfo(yc)
                         return;
                     }
-                    fillKZFieldInfo(yc);
+
                     // 接口变更  日期为前一天
                     // todayDate = formatDate(data[0].Date + sub);
                 break;
@@ -364,14 +331,6 @@
                         redrawChart(data,$this);
                     }
                 break;
-                case "Q617"://五档盘口
-                    // 1120新增
-                    setfillPK(data);
-                    break;
-                case "Q618"://五档盘口
-                    // 1120新增
-                    setfillZBCJ(data);
-                    break;
                 case "R646":  //心跳包
                     // console.log(data);
                 default:
@@ -394,14 +353,6 @@
     // 清盘
     InitXMLIChart.prototype.getQP = function(){
         socket.request(this.options.QPDATA);
-    },
-    //请求盘口
-    InitXMLIChart.prototype.getPK = function(){
-        socket.request(this.options.QPK);
-    },
-    //请求逐笔成交
-    InitXMLIChart.prototype.getZBCJ = function(){
-        socket.request(this.options.QZBCJ);
     };
     //初始化分时图 
     function initCharts(data,type,$this){
@@ -1199,7 +1150,7 @@
                         } else {
                             $("#toolContent").css("left", continerWidth - toolContent - 60);
                         }
-                        $(".fName").text(FieldInfo.fName);
+                        $(".fName").text(StockSocket.FieldInfo.Name);
                     }
                 }else{
                     $("#noData").show();
@@ -1241,28 +1192,88 @@
         var keyCode = e.keyCode;
         switch (keyCode) {
             case 37:
-                KLineData.lineType=="mline"?move(-1, true):move_k(-1, true);
+                move(-1, true);
                 break; //左
             case 38:
-                KLineData.lineType=="mline"?move(1):move_k(1);
+                move(1);
                 break;  //上
             case 39:
-                KLineData.lineType=="mline"?move(1, true):move_k(1, true);
+                move(1, true);
                 break; //右
             case 40:
-                KLineData.lineType=="mline"?move(-1):move_k(-1);
+                move(-1);
                 break; //下
             default:
                 break;
         }
     });
-    
+    // 按键对应的move函数
     function move(index, type) {
-        var chart;
+        
         if($("#MLine").css("display") == "none") {
-            // chart = KChart;
+            // 获取dataZoom起始位置和结束位置，比较他的信息，设置他的位置
+            var KStart = KLineSocket.HistoryData.KChart.getOption().dataZoom[0].start,
+                KEnd = KLineSocket.HistoryData.KChart.getOption().dataZoom[0].end,
+                KCenter = (KEnd-KStart)/2+KStart,
+                KLength = KLineSocket.HistoryData.hDate.length,
+                KContinerWidth = $("#kline_charts").width();
+
+            var count = KLineSocket.HistoryData.KChart?KLineSocket.HistoryData.KChart.getOption().series[0].data.length:0;
+            if (type) {
+                if (KLineSocket.KLineSet.mouseHoverPoint == 0 && index == -1) {
+                    KLineSocket.KLineSet.mouseHoverPoint = KLineSocket.HistoryData.KChart.getOption().series[0].data.length;
+                }
+                if (KLineSocket.KLineSet.mouseHoverPoint + index > KLineSocket.HistoryData.KChart.getOption().series[0].data.length - 1 && index == 1) {
+                    KLineSocket.KLineSet.mouseHoverPoint = 0;
+                    index = 0;
+                }
+                // 信息框位置
+                if ((KLineSocket.KLineSet.mouseHoverPoint+1)/KLength > KCenter/100) {
+                    $("#kline_tooltip").css("left", 83/830*KContinerWidth);
+                } else {
+                    $("#kline_tooltip").css({"left":"auto","right":83/830*KContinerWidth});
+                }
+                $("#kline_tooltip").show();
+                var name = KLineSocket.HistoryData.KChart.getOption().series[0].name;
+                KLineSocket.HistoryData.KChart.dispatchAction({
+                    type: 'showTip',
+                    seriesIndex: 0,
+                    dataIndex: KLineSocket.KLineSet.mouseHoverPoint + index,
+                    name: name,
+                    position: ['50%', '50%']
+                });
+
+            } else {
+                if (index == 1) {
+                    KLineSocket.KLineSet.start += 10;
+                    if (KLineSocket.KLineSet.start > 100) {
+                        KLineSocket.KLineSet.start = 100;
+                        return;
+                    } else {
+                        KLineSocket.KLineSet.mouseHoverPoint = KLineSocket.KLineSet.mouseHoverPoint + (count * KLineSocket.KLineSet.zoom / 100);
+                    }
+                } else {
+                    KLineSocket.KLineSet.start -= 10;
+                    if (KLineSocket.KLineSet.start < 0) {
+                        KLineSocket.KLineSet.start = 0;
+                        return;
+                    } else {
+                        KLineSocket.KLineSet.mouseHoverPoint = KLineSocket.KLineSet.mouseHoverPoint - (count * KLineSocket.KLineSet.zoom / 100);
+                    }
+                }
+                KLineSocket.HistoryData.KChart.dispatchAction({
+                    type: 'dataZoom',
+                    // 可选，dataZoom 组件的 index，多个 dataZoom 组件时有用，默认为 0
+                    dataZoomIndex: 0,
+                    // 开始位置的百分比，0 - 100
+                    start: KLineSocket.KLineSet.start,
+                    // 结束位置的百分比，0 - 100
+                    end: 100
+                });
+                
+            }
         }else {
-            chart = myChart;
+            var chart = myChart;
         
             if (type) {
                 if (mouseHoverPoint == 0 && index == -1) {
@@ -1284,11 +1295,7 @@
                     seriesIndex: 0,
                     dataIndex: mouseHoverPoint + index,
                     name: name,
-                    position: function (pos, params, el, elRect, size) {
-                        var obj = {top: 10};
-                        obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 30;
-                        return obj;
-                    }//['50%', '50%']
+                    position: ['50%', '50%']
                 });
             } else {
                 if (index == 1) {
@@ -1322,77 +1329,9 @@
 
 
         }
-    }
-
-    // 按键对应的move函数
-    function move_k(index, type) {
-        // 获取dataZoom起始位置和结束位置，比较他的信息，设置他的位置
-        var start = KLineData.KChart.getOption().dataZoom[0].start,
-            end = KLineData.KChart.getOption().dataZoom[0].end,
-            center = (end-start)/2+start,
-            length = KLineData.hDate.length,
-            continerWidth = $("#kline_charts").width();
-
-        var count = KLineData.KChart?KLineData.KChart.getOption().series[0].data.length:0;
-        if (type) {
-            if (KLineSet.mouseHoverPoint == 0 && index == -1) {
-                KLineSet.mouseHoverPoint = KLineData.KChart.getOption().series[0].data.length;
-            }
-            if (KLineSet.mouseHoverPoint + index > KLineData.KChart.getOption().series[0].data.length - 1 && index == 1) {
-                KLineSet.mouseHoverPoint = 0;
-                index = 0;
-            }
-            // 信息框位置
-            if ((KLineSet.mouseHoverPoint+1)/length > center/100) {
-                $("#kline_tooltip").css("left", 83/830*continerWidth);
-            } else {
-                $("#kline_tooltip").css({"left":"auto","right":83/830*continerWidth});
-            }
-            $("#kline_tooltip").show();
-            var name = KLineData.KChart.getOption().series[0].name;
-            KLineData.KChart.dispatchAction({
-                type: 'showTip',
-                seriesIndex: 0,
-                dataIndex: KLineSet.mouseHoverPoint + index,
-                name: name,
-                position: function (pos, params, el, elRect, size) {
-                    var obj = {top: 10};
-                    obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 30;
-                    return obj;
-                }//['50%', '50%']
-            });
-
-        } else {
-            if (index == 1) {
-                KLineSet.start += 10;
-                if (KLineSet.start > 100) {
-                    KLineSet.start = 100;
-                    return;
-                } else {
-                    KLineSet.mouseHoverPoint = KLineSet.mouseHoverPoint + (count * KLineSet.zoom / 100);
-                }
-            } else {
-                KLineSet.start -= 10;
-                if (KLineSet.start < 0) {
-                    KLineSet.start = 0;
-                    return;
-                } else {
-                    KLineSet.mouseHoverPoint = KLineSet.mouseHoverPoint - (count * KLineSet.zoom / 100);
-                }
-            }
-            KLineData.KChart.dispatchAction({
-                type: 'dataZoom',
-                // 可选，dataZoom 组件的 index，多个 dataZoom 组件时有用，默认为 0
-                dataZoomIndex: 0,
-                // 开始位置的百分比，0 - 100
-                start: KLineSet.start,
-                // 结束位置的百分比，0 - 100
-                end: 100
-            });
-            
-        }
-        
     };
+
+
     // 接收到清盘指令重绘图表
     function redrawChart(data,$this){
         $this = $this.options;

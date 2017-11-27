@@ -125,10 +125,14 @@ h2{
 	font-size: 0;
 }
 .cb-pk ul span:first-child{
-	width: 94px;
+	width: 74px;
 }
 .cb-pk ul span:nth-child(2){
 	width: 83px;
+}
+.cb-pk ul span:nth-child(3){
+	width: 70px;
+	text-align: right;
 }
 .cb-title-sub{
 	border-top: 1px solid #e5e5e5;
