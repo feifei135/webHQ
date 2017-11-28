@@ -202,6 +202,9 @@ h2{
 .bb-info span:first-child{
 	width: 290px;
 	padding-right: 4px;
+	overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 .bb-info span:nth-child(2){
 	width: 57px;
@@ -222,6 +225,7 @@ h2{
 }
 .bb-data span:last-child{
 	display: inline;
+	float: none;
 }
 .bb-data li{
 	overflow: hidden;

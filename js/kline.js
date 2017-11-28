@@ -75,8 +75,11 @@ var turnOff = true;
 		// 发起websocket请求
 		initSocketEvent(StockSocket, wsStock);
 
-	}
+	};
 })(jQuery);
+
+
+
 // 指数/个股信息参数
 var ReqStockInfoOpt = function(option){
 	var ExchangeID = option.ExchangeID?option.ExchangeID:"101",
@@ -268,6 +271,7 @@ WebSocketConnect.prototype = {
 						    }
 						},
 	reconnect:  function () {
+					var turnOff = true;
 					var _target = this;
 				    if (_target.lockReconnect) return;
 				    _target.lockReconnect = true;
@@ -420,7 +424,7 @@ function formatTimeSec(time) {
     return time;
 };
 //日期时间20170908 2017-09-08
-function formatDate(date) {
+function formatDateSplit(date) {
     date = date.toString();
     var Y = date.substring(0, 4);
     var M = date.substring(4, 6);
@@ -918,7 +922,7 @@ function splitData(data, isHistory) {
         if(!lastClose){
             lastClose = object.Open;                            // 上一根柱子的收盘价
         }
-        let e_date = formatDate(object.Date),                 // 当天日期
+        let e_date = formatDateSplit(object.Date),                 // 当天日期
             e_day = week[(new Date(e_date)).getDay()],        // 计算星期
             e_time,                                           //时间
             e_open = floatFixedDecimal(object.Open),             // 开
