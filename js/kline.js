@@ -1483,7 +1483,6 @@ function setToolInfo(length, showTip){
                 if(showTip){
                     $(".time", countent).text((KLineSocket.KLineSet.mouseHoverPoint==length-1)?KLineSocket.HistoryData.hTime:null); //时间
                 }else{
-                	console.log(KLineSocket.HistoryData.hTime)
                     $(".time", countent).text((KLineSocket.HistoryData.hTime=="00:00")?null:KLineSocket.HistoryData.hTime);
                 }
         }
