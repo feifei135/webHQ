@@ -310,10 +310,12 @@
                     break;
                 case "Q619"://订阅快照
                     // $(document).trigger("SBR_HQ",data);
+
                     if(!yc){
                         yc = data[0].PreClose; //获取昨收值
                         return;
                     }
+
                     // 接口变更  日期为前一天
                     // todayDate = formatDate(data[0].Date + sub);
                 break;
@@ -364,6 +366,7 @@
             var limitDown = yc - yc*0.1;
             if(type == "add"){
                 if(myChart != undefined){
+                    // yc = parseFloat(yc);
                     var a_lastData = data;
                     var last_dataTime = formatTime(a_lastData[0].Time);//moment(parseFloat(a_lastData[0].Time + "000")).format("HH:mm"); //行情最新时间
                     var last_date = dateToStamp(formatDate(a_lastData[0].Date) +" " + last_dataTime);
@@ -1087,23 +1090,16 @@
                     myChart.setOption(option);
 
                     count = myChart.getOption().series[0].data.length;
-                    if(!count){
-                        return;
-                    }
                     
-                    var marktToolData = [
-                        $this.history_data[count - 1], 
-                        $this.z_history_data[count - 1], 
-                        $this.a_history_data[count - 1], 
-                        moment(parseFloat($this.c_data[count - 1])).format("YYYY-MM-DD HH:mm")
-                    ];
+                    var marktToolData = [$this.history_data[count - 1], $this.z_history_data[count - 1], $this.a_history_data[count - 1], moment(parseFloat($this.c_data[count - 1])).format("YYYY-MM-DD HH:mm")];
                     set_marketTool(marktToolData,$this); //设置动态行情条
 
                     myChart.on('showTip', function (params) {
+                        // console.log(params);
                         mouseHoverPoint = params.dataIndex;
-                        $("#toolContent .dataTime").text(formatDate($this.c_data[mouseHoverPoint],"1"));
                         if ($this.history_data[mouseHoverPoint]) {
                             $("#toolContent_M").children().first().text(moment(parseFloat($this.c_data[mouseHoverPoint])).format("YYYY-MM-DD HH:mm"));
+                            $("#toolContent .dataTime").text(formatDate($this.c_data[mouseHoverPoint],"1"));
                             if($this.history_data[mouseHoverPoint] >= yc){
                                 $("#toolContent_M").children().eq(1).text($this.history_data[mouseHoverPoint]).css("color",colorList[0]);
                                 $("#toolContent_M").children().eq(3).text($this.z_history_data[mouseHoverPoint]).css("color",colorList[0]);
@@ -1132,11 +1128,6 @@
                             $("#toolContent_M").children().eq(3).text("-");
                             $(".vol i").text("-");
                             $("#quantityRatio").text("-");
-                            // 浮窗数据
-                            $(".volume").text("-"); 
-                            $("#quantityRatio").text("-");
-                            $(".dataPrice").text("-");
-                            $(".change").text("-");
                         }
                     });
 
@@ -1227,18 +1218,18 @@
         
         if($("#MLine").css("display") == "none") {
             // 获取dataZoom起始位置和结束位置，比较他的信息，设置他的位置
-            var KStart = KLineSocket.HistoryData.KChart.getOption().dataZoom[0].start,
-                KEnd = KLineSocket.HistoryData.KChart.getOption().dataZoom[0].end,
+            var KStart = KLineSocket.KChart.getOption().dataZoom[0].start,
+                KEnd = KLineSocket.KChart.getOption().dataZoom[0].end,
                 KCenter = (KEnd-KStart)/2+KStart,
                 KLength = KLineSocket.HistoryData.hDate.length,
                 KContinerWidth = $("#kline_charts").width();
 
-            var count = KLineSocket.HistoryData.KChart?KLineSocket.HistoryData.KChart.getOption().series[0].data.length:0;
+            var count = KLineSocket.KChart?KLineSocket.KChart.getOption().series[0].data.length:0;
             if (type) {
                 if (KLineSocket.KLineSet.mouseHoverPoint == 0 && index == -1) {
-                    KLineSocket.KLineSet.mouseHoverPoint = KLineSocket.HistoryData.KChart.getOption().series[0].data.length;
+                    KLineSocket.KLineSet.mouseHoverPoint = KLineSocket.KChart.getOption().series[0].data.length;
                 }
-                if (KLineSocket.KLineSet.mouseHoverPoint + index > KLineSocket.HistoryData.KChart.getOption().series[0].data.length - 1 && index == 1) {
+                if (KLineSocket.KLineSet.mouseHoverPoint + index > KLineSocket.KChart.getOption().series[0].data.length - 1 && index == 1) {
                     KLineSocket.KLineSet.mouseHoverPoint = 0;
                     index = 0;
                 }
@@ -1249,8 +1240,8 @@
                     $("#kline_tooltip").css({"left":"auto","right":83/830*KContinerWidth});
                 }
                 $("#kline_tooltip").show();
-                var name = KLineSocket.HistoryData.KChart.getOption().series[0].name;
-                KLineSocket.HistoryData.KChart.dispatchAction({
+                var name = KLineSocket.KChart.getOption().series[0].name;
+                KLineSocket.KChart.dispatchAction({
                     type: 'showTip',
                     seriesIndex: 0,
                     dataIndex: KLineSocket.KLineSet.mouseHoverPoint + index,
@@ -1276,7 +1267,7 @@
                         KLineSocket.KLineSet.mouseHoverPoint = KLineSocket.KLineSet.mouseHoverPoint - (count * KLineSocket.KLineSet.zoom / 100);
                     }
                 }
-                KLineSocket.HistoryData.KChart.dispatchAction({
+                KLineSocket.KChart.dispatchAction({
                     type: 'dataZoom',
                     // 可选，dataZoom 组件的 index，多个 dataZoom 组件时有用，默认为 0
                     dataZoomIndex: 0,
@@ -1556,9 +1547,6 @@
             if(i==0){
                 $li.addClass("active");
             }
-            // var $a = $("<a></a>");
-            // $a.attr({"href":"javascrit:void(null)"});
-            // $a.text(item.name);
             $li.text(item.name);
             $($el).append($li);
         });
@@ -1566,19 +1554,5 @@
 
     $.fn.toggleLi.defaults = {
          data:[{name:"分时"}]
-    };
-
-    $.fn.chartsTab = function(options,params){
-        options = $.extend({},$.fn.chartsTab.defaults,options || {});
-        var $this = $(this);
-        var opts = "";
-        for(var i = 0;i<options.data.length;i++){
-            opts += "<a class='tabAs "+(i==0?'activeAs':'')+"' href='javasctipt:void(0);'>"+options.data[i]+"</a>" ;
-        }
-        $this.append(opts);
-    };
-
-    $.fn.chartsTab.defaults = {
-        data:["无","量比","MACD"]
     };
 })(jQuery);
