@@ -1,6 +1,6 @@
 ;(function($,undefined){
     var socket = null;
-    var yc;
+    var yc=0;
     var myChart = null;
     var mouseHoverPoint = 0;
     var isHoverGraph = false;
@@ -44,12 +44,11 @@
 
         //没连接上会一直重连，设置延迟避免请求过多
         setTimeout(function () {
+            console.log("重连咯~~~~");
+            // myChart.dispose();
             var ws = $this.createWebSocket(_this.wsUrl);
             var initXML = new InitXMLIChart(_this);
-            // myChart.dispose();
             yc = 0;
-            initXML.options.c_data=[];
-            initXML.options.v_data=[];
             initEvent(ws,initXML);
             _this.lockReconnect = false;
         }, 2000);
@@ -70,7 +69,7 @@
         var _this = this;
         self.timeoutObj = setTimeout(function () {
             //onmessage拿到返回数据就说明连接正常
-            _this.request(this.XTB);
+            _this.request(_this.XTB);
             self.serverTimeoutObj = setTimeout(function () {//如果超过一定时间还没重置，说明后端主动断开了
                 _this.ws.close();//如果onclose会执行reconnect，我们执行ws.close()就行了.如果直接执行reconnect 会触发onclose导致重连两次
             }, self.timeout);
@@ -507,7 +506,6 @@
                     
                     var lastDate = moment(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)).utc().valueOf();
                     
-                    var maxPrice=minPrice=parseFloat(data[0].Price);//找出最大值和最小值
                     for(var i=0;i<$this.c_data.length;i++){
                         if(lastDate < $this.c_data[i]){
                             break;
@@ -551,7 +549,12 @@
                         var minY = (yc - $this.interval).toFixed($this.decimal);//(minPrice - r1).toFixed($this.decimal);//(yc - $this.interval).toFixed($this.decimal);
                         var middleY = yc.toFixed($this.decimal);
                         var maxY = (yc + $this.interval).toFixed($this.decimal);//(maxPrice + r1).toFixed($this.decimal);//(yc + $this.interval).toFixed($this.decimal);
-
+                        if(minY < limitDown){
+                            minY = limitDown;
+                        }
+                        if(maxY > limitUp){
+                            maxY = limitUp;
+                        }
 
                         var dd = ((parseFloat(minY) - (yc)) / (yc) );//* 100);
                         if(Math.abs(dd) > 1){
@@ -1106,18 +1109,22 @@
                                 $("#toolContent_M").children().eq(3).text($this.z_history_data[mouseHoverPoint]).css("color",colorList[0]);
                                 // 浮窗数据
                                 $(".dataPrice").text($this.history_data[mouseHoverPoint]).css("color",colorList[0]);
-                                $(".change").text($this.z_history_data[mouseHoverPoint]).css("color",colorList[0]);
+                                $(".change").text($this.z_history_data[mouseHoverPoint]+"%").css("color",colorList[0]);
                             }else{
                                 $("#toolContent_M").children().eq(1).text($this.history_data[mouseHoverPoint]).css("color",colorList[1]);
                                 $("#toolContent_M").children().eq(3).text($this.z_history_data[mouseHoverPoint]).css("color",colorList[1]);
                                 // 浮窗数据
                                 $(".dataPrice").text($this.history_data[mouseHoverPoint]).css("color",colorList[1]);
-                                $(".change").text($this.z_history_data[mouseHoverPoint]).css("color",colorList[1]);
+                                $(".change").text($this.z_history_data[mouseHoverPoint]+"%").css("color",colorList[1]);
                             }
                             $("#toolContent_M").children().eq(2).text($this.a_history_data[mouseHoverPoint]);
                             $(".vol i").text($this.a_history_data[mouseHoverPoint]);
                             $("#quantityRatio").text($this.a_history_data[mouseHoverPoint]);
-                            $(".volume").text($this.a_history_data[mouseHoverPoint]); 
+                            if($this.a_history_data[mouseHoverPoint]>100){
+                                $(".volume").text(parseFloat($this.a_history_data[mouseHoverPoint]/100).toFixed(2) +"手"); 
+                            }else{
+                                $(".volume").text(parseFloat($this.a_history_data[mouseHoverPoint]).toFixed(2) +"股"); 
+                            }
                         } else {
                             $("#toolContent_M").children().first().text("-");
                             $("#toolContent_M").children().eq(1).text("-");
@@ -1356,8 +1363,8 @@
                 var minY = (yc - yc*0.03).toFixed(decimal);
                 var middleY = yc.toFixed(decimal);
                 var maxY = (yc + yc*0.03).toFixed(decimal);
-
                 var dd = ((parseFloat(minY) - parseFloat(yc)) / parseFloat(yc) * 100);
+
                 if(Math.abs(dd) > 1){
                     var minY1 = ((parseFloat(minY) - parseFloat(yc)) / parseFloat(yc)).toFixed(2);
                     var maxY1 = ((parseFloat(maxY) - parseFloat(yc)) / parseFloat(yc)).toFixed(2);
@@ -1424,6 +1431,8 @@
         //2、判断是开始时间是否大于结束时间，大于的话就要取前一天，小于的话按照正常的来 
         var b_time1,b_time2;  // 停盘时间
         var todayDate = formatDate(todayDateStr);
+        var dateArr = new Array();
+        var dateArrStamp = new Array();
         if(sub > -1){ //未跨天的时间计算  1-中间有断开  2-中间未断开
             // todayDate = formatDate(data[0].Date + sub);
             if($this.nowDateTime.length > 1){
@@ -1439,8 +1448,6 @@
                 finishTime = todayDate + " " + $this.nowDateTime[0].endTime;
             }
         }else{  //跨天的时间计算  1-中间有断开
-            // todayDate = formatDate(data[0].Date + sub);
-            // todayDate = formatDate(todayDateStr);
             if($this.nowDateTime.length > 1){
                 beginTime = todayDate + " " + $this.nowDateTime[0].startTime;
                 finishTime = todayDate + " " + $this.nowDateTime[0].endTime;
@@ -1489,25 +1496,26 @@
         var i = 0;
         while (moment(timeAdd).isBefore(moment(finishTime))) {
             if (i == 0) {
-                $this.c_data.push(beginTime);
+                dateArrStamp.push(beginTime);
             } else {
                 timeAdd = moment(timeAdd).add(1, 'm').utc().valueOf();
                 if(b_time1 && b_time2){
                     if (moment(timeAdd).isAfter(moment(b_time1)) && moment(timeAdd).isBefore(moment(b_time2))) {
                         continue;
                     } else {
-                        $this.c_data.push(timeAdd);
+                        dateArrStamp.push(timeAdd);
                     }
                 }else{
-                    $this.c_data.push(timeAdd);
+                    dateArrStamp.push(timeAdd);
                 }
             }
             i++;
         }
-        for(var k = 0;k < $this.c_data.length;k++){
-            $this.v_data.push(formatDate($this.c_data[k],"1"));
+        for(var k = 0;k < dateArrStamp.length;k++){
+            dateArr.push(formatDate(dateArrStamp[k],"1"));
         }
-        return $this.v_data;
+        $this.c_data = dateArrStamp;
+        return dateArr;
     }
 
     $.fn.initMline = function(options,params){
