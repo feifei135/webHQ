@@ -8,8 +8,7 @@ var KLineSocket,StockSocket;
 		KLineSocket.KChart = echarts.init(document.getElementById('kline_charts'));	// K线绘制对象;
 
 		// 建立websocket连接，命名为ws
-		var ws = KLineSocket.createWebSocket();
-
+		KLineSocket.ws = KLineSocket.createWebSocket();
 		// 点击按钮查询K线
 		KLineSocket.turnOn = true;
 		// 区分点击的按钮是否是当前按钮
@@ -31,7 +30,7 @@ var KLineSocket,StockSocket;
 			KLineSocket.HistoryData = KLrequireObj.HistoryData;
 			KLineSocket.KLineSet = KLrequireObj.KLineSet;
 			// 发起websocket请求
-			initSocketEvent(KLineSocket, ws, klineType);
+			initSocketEvent(KLineSocket, klineType);
 			
 
 			if(klineType=="mline"&&KLineSocket.turnOn){
@@ -78,14 +77,12 @@ var KLineSocket,StockSocket;
 		StockSocket = new WebSocketConnect(StockReqObj.options);
 		StockSocket.FieldInfo = StockReqObj.FieldInfo;
 		StockSocket.turnOff = true;
-		// 建立websocket连接，命名为wsStock
-		var wsStock = StockSocket.createWebSocket();
-		
+		StockSocket.ws = StockSocket.createWebSocket();
 
 		// 存储当前个股/指数信息
 		reqStockInfo(StockSocket.option);
-		// 发起websocket请求
-		initSocketEvent(StockSocket, wsStock);
+		// 发起websocket请求-reqStockInfo中去写
+		// initSocketEvent(StockSocket); 
 		// 个股需要查询企业信息，公司信息
 	    var reqComOpt = ["23000171","23000138","23000164","23000188"];
 	    requireCom(reqComOpt, StockSocket.FieldInfo.Code);
@@ -268,8 +265,9 @@ WebSocketConnect.prototype = {
 				    //没连接上会一直重连，设置延迟避免请求过多
 				    setTimeout(function () {
 				        var ws = _target.createWebSocket(_target.wsUrl);
+				        _target.ws = _target.createWebSocket(_target.wsUrl);
 
-				        initSocketEvent(_target, ws, _target.option.lineType);
+				        initSocketEvent(_target, _target.option.lineType);
 
 				        _target.lockReconnect = false;
 				        console.log("重连中……");
@@ -332,17 +330,17 @@ WebSocketConnect.prototype.__proto__ = {
 						},
 };
 // websocket请求
-var initSocketEvent = function(socket, ws, klineType){
+var initSocketEvent = function(socket, klineType){
 
-	ws.onclose = function () {
+	socket.ws.onclose = function () {
 					console.log("终端重连……");
 				    socket.reconnect(); //终端重连
 				},
-	ws.onerror = function () {
+	socket.ws.onerror = function () {
 					console.log("报错重连……");
 				    socket.reconnect(); //报错重连
 				},
-	ws.onopen = function () {
+	socket.ws.onopen = function () {
 					console.log("open");
 				    //心跳检测重置
 				    socket.reset().start(); 				// 第一次建立连接则启动心跳包
@@ -362,7 +360,7 @@ var initSocketEvent = function(socket, ws, klineType){
 					    StockSocket.getKKZQAll();
 				    }
 				},
-	ws.onmessage = function (evt) {
+	socket.ws.onmessage = function (evt) {
 
 					console.log("打开成功");
 
@@ -560,7 +558,12 @@ function reqStockInfo(options){
         success: function(xml){
             var allZSCode =  $(xml).find("EXCHANGE PRODUCT SECURITY");
             // 1109新增: 获取交易名字和小数位数
-            getStockInfo(allZSCode,options.InstrumentID);
+            setStockInfo(allZSCode,options.InstrumentID);
+            // 发起websocket请求-reqStockInfo中去写
+			initSocketEvent(StockSocket); 
+			// 个股需要查询企业信息，公司信息
+		    var reqComOpt = ["23000171","23000138","23000164","23000188"];
+		    requireCom(reqComOpt, StockSocket.FieldInfo.Code);
         }
     });
 };
@@ -655,7 +658,7 @@ function setFieldInfo(data){
     }
 }
 // 代码表：获取 指数/个股 名称，小数位数，InstrumentCode，Code
-function getStockInfo(_codeList,id){
+function setStockInfo(_codeList,id){
     var fieldInsCode;
     $.each(_codeList,function(){
         if($(this).attr("id") == id){
@@ -680,7 +683,7 @@ function requireCom(reqComOpt,code){
             url:  reqUrl+reqComObj+"&P_NODE_CODE="+code,
             type: 'GET',
             dataType: 'json',
-            async:true,
+            async:false,
             cache:false,
             error: function(data){
                 console.log("请求公司信息出错");
