@@ -225,7 +225,6 @@ var KLineRequire = function(option, klineType){
 		start: 0
 	};
 };
-var getReq = 
 // websocket连接
 var WebSocketConnect = function(options){
 	this.wsUrl = options.wsUrl?options.wsUrl:"ws://172.17.20.203:7681";
