@@ -294,18 +294,17 @@ ul{
 }
 .kline-info li{
     display: inline-block;
-    margin: 0 10px;
     line-height: 32px;
     overflow: hidden;
     font-size: 12px;
 }
-.kline-info li span{
+.kline-info li span:not(:empty){
 	font-size: 12px;
 	line-height: 32px;
-	margin-left: 10px;
+	margin: 0 10px;
 }
-.kline-info li:nth-child(4){
-    margin-left: 10px
+.kline-info li:nth-child(-n+3) span{
+	margin: 0;
 }
 .kline-charts-container{
     position: relative;
