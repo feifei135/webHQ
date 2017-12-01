@@ -5,6 +5,8 @@ function getQueryString(name) {
     if (r != null) return decodeURIComponent(r[2]); return null;
 }
 //日期YYYYMMDD转为YYYY-MM-DD 或者 时间戳转为年-月-日  星期 时间   dateTime为时间或时间戳 type为转换类型,如果不传默认是第一种转换
+// type为“0”时 时间戳转为年-月-日 hh:mm
+// type为"1"时 时间戳转为年-月-日 星期 hh:mm
 function formatDate(dateTime,type){
     if(!dateTime) return;
     var dateStr;
@@ -56,7 +58,7 @@ function formatDate(dateTime,type){
             default:
             break;
         }
-        dateStr = year + "-" + month + "-" + date + "  " + dayStr + " " + hour + ":" + minute;
+        dateStr = year + "-" + month + "-" + date + "  " + (type == 0?"":dayStr) + " " + hour + ":" + minute;
     }
     return dateStr;
 }
