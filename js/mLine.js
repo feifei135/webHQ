@@ -362,21 +362,20 @@
             $(".vol").show();
             $(".chartsTab").show();
             yc = parseFloat(yc);
-            var limitUp = yc + yc*0.1;
-            var limitDown = yc - yc*0.1;
+            var limitUp = (yc + yc*0.1).toFixed($this.decimal);
+            var limitDown = (yc - yc*0.1).toFixed($this.decimal);
             if(type == "add"){
                 if(myChart != undefined){
-                    // yc = parseFloat(yc);
                     var a_lastData = data;
-                    var last_dataTime = formatTime(a_lastData[0].Time);//moment(parseFloat(a_lastData[0].Time + "000")).format("HH:mm"); //行情最新时间
-                    var last_date = dateToStamp(formatDate(a_lastData[0].Date) +" " + last_dataTime);
+                    var last_dataTime = formatTime(a_lastData[0].Time);//行情最新时间
+                    var last_date = dateToStamp(formatDate(a_lastData[0].Date) +" " + last_dataTime);//最新时间时间戳
                     var zVale = parseFloat(((parseFloat(a_lastData[0].Price) - parseFloat(yc)) / parseFloat(yc) * 100).toFixed(2)); //行情最新涨跌幅
                     var aValue = parseFloat(a_lastData[0].Volume); //最新成交量
 
                     if((parseFloat(a_lastData[0].Price)) >= limitUp){
-                        a_lastData[0].Price = limitUp.toFixed($this.decimal);
+                        a_lastData[0].Price = limitUp;
                     }else if((parseFloat(a_lastData[0].Price)) <= limitDown){
-                        a_lastData[0].Price = limitDown.toFixed($this.decimal);
+                        a_lastData[0].Price = limitDown;
                     }
 
                     for(var i=0;i<$this.c_data.length;i++){
@@ -405,18 +404,24 @@
                         $this.history_data[$this.history_data.length - 1],
                         $this.z_history_data[$this.z_history_data.length - 1],
                         $this.a_history_data[$this.a_history_data.length - 1],
-                        moment(parseFloat($this.c_data[$this.history_data.length - 1])).format("YYYY-MM-DD HH:mm")
+                        formatDate(parseFloat($this.c_data[$this.history_data.length - 1]),"0")
+                        // moment(parseFloat($this.c_data[$this.history_data.length - 1])).format("YYYY-MM-DD HH:mm")
                     ];
                     set_marketTool(marktToolData,$this); //设置动态行情条
-
                     var fvalue, r1;
                     fvalue = parseFloat(a_lastData[0].Price);
                     r1 = Math.abs(fvalue - parseFloat(yc));
                     if (r1 > $this.interval) {
-                        $this.interval = r1;
+                        $this.interval = r1 + r1*0.1;
                         var minY = (yc - $this.interval).toFixed($this.decimal);
                         var middleY = yc.toFixed($this.decimal);
                         var maxY = (yc + $this.interval).toFixed($this.decimal);
+                        if(minY <= limitDown){
+                            minY = limitDown;
+                        }
+                        if(maxY >= limitUp){
+                            maxY = limitUp;
+                        }
                         var split = parseFloat(((maxY - minY) / 6).toFixed(4));
                         myChart.setOption({
                             yAxis: {
@@ -461,7 +466,7 @@
                                 var obj = {top: 10};
                                 obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 30;
                                 return obj;
-                            }  //['50%', '50%']
+                            }
                         });
                     }
                     myChart.setOption({
@@ -471,10 +476,6 @@
                         {
                             data:$this.v_data
                         }],
-                        // tooltip: {
-                        //     trigger:"axis",
-                        //     showContent:true 
-                        // },
                         series: [
                             {
                                 data: $this.history_data,
@@ -504,17 +505,17 @@
                     var price = [];//价格
                     var volume = [];//成交量
                     var zdfData = [];//涨跌幅
-                    
                     $this.v_data = getxAxis(data[0].Date,$this);
-                    
-                    var lastDate = moment(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)).utc().valueOf();
-                    
+                    // var lastDate = moment(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)).utc().valueOf();
+                    var lastDate = dateToStamp(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time));
+
                     for(var i=0;i<$this.c_data.length;i++){
                         if(lastDate < $this.c_data[i]){
                             break;
                         }
                         for(var j=0;j<data.length;j++){
-                            var dateStamp = moment(formatDate(data[j].Date) +" "+formatTime(data[j].Time)).utc().valueOf();
+                            // var dateStamp = moment(formatDate(data[j].Date) +" "+formatTime(data[j].Time)).utc().valueOf();
+                            var dateStamp = dateToStamp(formatDate(data[j].Date) +" "+formatTime(data[j].Time));
                             if($this.c_data[i] == dateStamp){
                                 var fvalue = parseFloat(data[j].Price);//价格
                                 if(data[j].Price >= limitUp){
@@ -547,7 +548,7 @@
                     $this.z_history_data = zdfData;//涨跌幅历史数据
                     $this.a_history_data = volume;//成交量历史数据
                     //取绝对值  差值 
-                    $this.interval =$this.interval + $this.interval*0.1;
+                    $this.interval = $this.interval + $this.interval*0.1;
                     if (yc) {
                         var minY = (yc - $this.interval).toFixed($this.decimal);//(minPrice - r1).toFixed($this.decimal);//(yc - $this.interval).toFixed($this.decimal);
                         var middleY = yc.toFixed($this.decimal);
@@ -1091,15 +1092,20 @@
 
                     count = myChart.getOption().series[0].data.length;
                     
-                    var marktToolData = [$this.history_data[count - 1], $this.z_history_data[count - 1], $this.a_history_data[count - 1], moment(parseFloat($this.c_data[count - 1])).format("YYYY-MM-DD HH:mm")];
+                    var marktToolData = [
+                        $this.history_data[count - 1], 
+                        $this.z_history_data[count - 1], 
+                        $this.a_history_data[count - 1], 
+                        formatDate(parseFloat($this.c_data[count - 1]),"0")//moment(parseFloat($this.c_data[count - 1])).format("YYYY-MM-DD HH:mm")
+                    ];
                     set_marketTool(marktToolData,$this); //设置动态行情条
 
                     myChart.on('showTip', function (params) {
-                        // console.log(params);
                         mouseHoverPoint = params.dataIndex;
+                        $("#toolContent .dataTime").text(formatDate($this.c_data[mouseHoverPoint],"1"));
+                        $("#toolContent_M").children().first().text(formatDate($this.c_data[mouseHoverPoint],"0"));
                         if ($this.history_data[mouseHoverPoint]) {
-                            $("#toolContent_M").children().first().text(moment(parseFloat($this.c_data[mouseHoverPoint])).format("YYYY-MM-DD HH:mm"));
-                            $("#toolContent .dataTime").text(formatDate($this.c_data[mouseHoverPoint],"1"));
+                            $("#toolContent_M").children().first().text(formatDate(parseFloat($this.c_data[mouseHoverPoint]),"0"));//moment(parseFloat($this.c_data[mouseHoverPoint])).format("YYYY-MM-DD HH:mm"));
                             if($this.history_data[mouseHoverPoint] >= yc){
                                 $("#toolContent_M").children().eq(1).text($this.history_data[mouseHoverPoint]).css("color",colorList[0]);
                                 $("#toolContent_M").children().eq(3).text($this.z_history_data[mouseHoverPoint]).css("color",colorList[0]);
@@ -1122,12 +1128,14 @@
                                 $(".volume").text(parseFloat($this.a_history_data[mouseHoverPoint]).toFixed(2) +"股"); 
                             }
                         } else {
-                            $("#toolContent_M").children().first().text("-");
                             $("#toolContent_M").children().eq(1).text("-");
                             $("#toolContent_M").children().eq(2).text("-");
                             $("#toolContent_M").children().eq(3).text("-");
                             $(".vol i").text("-");
                             $("#quantityRatio").text("-");
+                            $(".dataPrice").text("-");
+                            $(".change").text("-");
+                            $(".volume").text("-");
                         }
                     });
 
