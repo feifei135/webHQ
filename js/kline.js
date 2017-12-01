@@ -1591,11 +1591,16 @@ function setToolInfo(length, showTip){
                     $(".time", countent).text(KLineSocket.HistoryData.hTime);
                 }
         }
-        $(".open", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hValuesList[setPoint][0])+"("+floatFixedTwo(KLineSocket.HistoryData.hValuesPercentList[setPoint][0])+"%)").attr("class",KLineSocket.HistoryData.hValuesPercentList[setPoint][0]>0?"open pull-right red":"open pull-right green"); //开
-        $(".price", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hValuesList[setPoint][1])+"("+floatFixedTwo(KLineSocket.HistoryData.hValuesPercentList[setPoint][1])+"%)").attr("class",KLineSocket.HistoryData.hValuesPercentList[setPoint][1]>0?"price pull-right red":"price pull-right green"); //收
-        $(".lowest", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hValuesList[setPoint][2])+"("+floatFixedTwo(KLineSocket.HistoryData.hValuesPercentList[setPoint][2])+"%)").attr("class",KLineSocket.HistoryData.hValuesPercentList[setPoint][2]>0?"lowest pull-right red":"lowest pull-right green"); //低
-        $(".highest", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hValuesList[setPoint][3])+"("+floatFixedTwo(KLineSocket.HistoryData.hValuesPercentList[setPoint][3])+"%)").attr("class",KLineSocket.HistoryData.hValuesPercentList[setPoint][3]>0?"highest pull-right red":"highest pull-right green"); //高
-        $(".z-value", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hZValuesList[setPoint])+"("+floatFixedTwo(KLineSocket.HistoryData.hZValuesListPercent[setPoint])+"%)").attr("class",KLineSocket.HistoryData.hZValuesList[setPoint]>0?"z-value pull-right red":"z-value pull-right green");   // 涨跌
+        $(".open", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hValuesList[setPoint][0])+"("+floatFixedTwo(KLineSocket.HistoryData.hValuesPercentList[setPoint][0])+"%)")
+        	.attr("class","open pull-right "+((setPoint==0)?"":(KLineSocket.HistoryData.hValuesPercentList[setPoint][0]>0?"red":"green"))); //开
+        $(".price", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hValuesList[setPoint][1])+"("+floatFixedTwo(KLineSocket.HistoryData.hValuesPercentList[setPoint][1])+"%)")
+        	.attr("class","price pull-right "+(KLineSocket.HistoryData.hValuesPercentList[setPoint][1]>0?"red":"green")); //收
+        $(".lowest", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hValuesList[setPoint][2])+"("+floatFixedTwo(KLineSocket.HistoryData.hValuesPercentList[setPoint][2])+"%)")
+        	.attr("class","lowest pull-right "+(KLineSocket.HistoryData.hValuesPercentList[setPoint][2]>0?"red":"green")); //低
+        $(".highest", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hValuesList[setPoint][3])+"("+floatFixedTwo(KLineSocket.HistoryData.hValuesPercentList[setPoint][3])+"%)")
+        	.attr("class","highest pull-right "+(KLineSocket.HistoryData.hValuesPercentList[setPoint][3]>0?"red":"green")); //高
+        $(".z-value", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hZValuesList[setPoint])+"("+floatFixedTwo(KLineSocket.HistoryData.hZValuesListPercent[setPoint])+"%)")
+        	.attr("class","z-value pull-right "+(KLineSocket.HistoryData.hZValuesList[setPoint]>0?"red":"green"));   // 涨跌
         
         
         $(".amplitude", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hZf[setPoint])+"("+floatFixedTwo(KLineSocket.HistoryData.hZfList[setPoint])+"%)");   // 振幅
