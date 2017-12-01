@@ -1282,18 +1282,10 @@ function chartPaint(isHistory){
                         formatter: function (value, index) {
                             return (value).toFixed(StockSocket.FieldInfo.Decimal);
                         }
-                    },
+                    }
                 },
                 {
                 	type:'value',
-                    // name:'成交',
-                    // nameLocation:'end',
-                    // nameTextStyle:{
-                    //     fontSize:14,
-                    // 	color: '#555',
-                    // 	padding: [0,45,15,0]
-                    // },
-                    // nameGap: 0,
                     scale: true,
                     gridIndex: 1,
                     min: 0,
@@ -1324,14 +1316,6 @@ function chartPaint(isHistory){
                 },
                 {
                 	type:'value',
-                    // name:'成交',
-                    // nameLocation:'end',
-                    // nameTextStyle:{
-                    //     fontSize:14,
-                    // 	color: '#555',
-                    // 	padding: [0,45,15,0]
-                    // },
-                    // nameGap: 0,
                     scale: true,
                     gridIndex: 2,
                     min: 0,
@@ -1440,7 +1424,7 @@ function chartPaint(isHistory){
                     },
                 },
                 {
-                    name: 'Volume',
+                    name: 'MACD',
                     type: 'line',
                     xAxisIndex: 2,
                     yAxisIndex: 2,

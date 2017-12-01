@@ -330,9 +330,11 @@ ul{
 	position: absolute;
 	left: 9.9%;
 	top: 7%;
+	font-size: 0;
 }
 .kline-MAs span{
-	margin-right: 10px;
+	margin-right: 20px;
+	font-size: 14px;
 }
 .kline-MA5{
 	color: #20bfeb;
@@ -409,7 +411,7 @@ ul{
 }
 .deal span,
 .macd span{
-	margin: 0 20px 0 16px;
+	margin-right: 20px;
 	font-size: 14px;
 }
 .deal .deal-title,
@@ -478,4 +480,7 @@ ul{
 }
 .kline-buttons span.active{
 	color: #2b99ff;
+}
+#kline_charts{
+	z-index: 1;
 }
