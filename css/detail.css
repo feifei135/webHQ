@@ -50,7 +50,7 @@ h2{
 }
 .tb-fieldName{
 	padding-right: 40px;
-	/*width: 260px;*/
+	min-width: 260px;
 	border-right: 1px solid #e5e5e5;
 }
 .tb-fn-title{
@@ -75,9 +75,23 @@ h2{
 .tb-fielList li{
 	display: block;
 	float: left;
-	width: 19%;
 	font-size: 16px;
 	line-height: 27px;
+}
+.tb-fielList li:nth-child(5n+1){
+	width: 19%;
+}
+.tb-fielList li:nth-child(5n+2){
+	width: 19%;
+}
+.tb-fielList li:nth-child(5n+3){
+	width: 25%;
+}
+.tb-fielList li:nth-child(5n+4){
+	width: 19%;
+}
+.tb-fielList li:nth-child(5n+5){
+	width: 17%;
 }
 .tb-fielList p{
 	display: inline-block;
