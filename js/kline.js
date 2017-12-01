@@ -1113,7 +1113,7 @@ function chartPaint(isHistory){
             axisPointer: {
                 link: {xAxisIndex: 'all'},
                 label: {
-                    backgroundColor: '#777' 
+                    backgroundColor: '#555' 
                 },
                 type: 'line',
                 lineStyle:{
@@ -1223,11 +1223,7 @@ function chartPaint(isHistory){
                         label: {
                         	show:true,
                             formatter: function(params){
-                                if(KLineSocket.option.lineType=="minute" || KLineSocket.option.lineType=="day"){
-                                    return params.value.replace(/-/g,"/");
-                                }else{
-                                    return params.value
-                                }
+                                return params.value.replace(/-/g,"/");
                             }
                         }
                     }
@@ -1245,10 +1241,7 @@ function chartPaint(isHistory){
                     splitLine: { show: false },
                     axisPointer: {
                         label: {
-                        	show:true,
-                            formatter: function(params){
-                                return params.value.replace(/-/g,"/");
-                            }
+                        	show:false
                         }
                     }
                 },
@@ -1264,10 +1257,7 @@ function chartPaint(isHistory){
                     splitLine: { show: false },
                     axisPointer: {
                         label: {
-                        	show:true,
-                            formatter: function(params){
-                                return params.value.replace(/-/g,"/");
-                            }
+                        	show:false
                         }
                     }
                 }
@@ -1393,7 +1383,7 @@ function chartPaint(isHistory){
                     },
                     data: KLineSocket.HistoryData.hValuesList,
                     markPoint: {
-                        symbolSize: 1,
+                        symbolSize: 20,
                         data: [
                             {
                                 name: 'highest value',
@@ -1401,8 +1391,9 @@ function chartPaint(isHistory){
                                 valueDim: 'highest',
                                 label: {
                                     normal: {
-                                        position: 'top',
-                                        color: "#000"
+                                        position: 'inside',
+                                        color: "#000",
+                                        fontSize: 14
                                     }
                                 },
                                 itemStyle: {
@@ -1415,11 +1406,11 @@ function chartPaint(isHistory){
                                 name: 'lowest value',
                                 type: 'min',
                                 valueDim: 'lowest',
-                                symbolSize: 10,
                                 label: {
                                     normal: {
-                                        position: '20%',
-                                        color: "#000"
+                                        position: 'bottom',
+                                        color: "#000",
+                                        fontSize: 14
                                     }
                                 },
                                 itemStyle: {
