@@ -1357,12 +1357,6 @@ function chartPaint(isHistory){
                             color0: '#3bc25b',
                             borderColor: '#e22f2a',
                             borderColor0: '#3bc25b'
-                        },
-                        emphasis: {
-                            color: 'black',
-                            color0: '#444',
-                            borderColor: 'black',
-                            borderColor0: '#444'
                         }
                     },
                     data: KLineSocket.HistoryData.hValuesList,
@@ -1395,7 +1389,8 @@ function chartPaint(isHistory){
                                     normal: {
                                         position: 'insideTopLeft',
                                         color: "#555",
-                                        fontSize: 14
+                                        fontSize: 14,
+                                        offset: [10,5]
                                     }
                                 },
                                 itemStyle: {
@@ -1418,9 +1413,6 @@ function chartPaint(isHistory){
                         normal: {
                             color: '#e22f2a',
                             color0: '#3bc25b'
-                        },
-                        emphasis: {
-                            color: '#000'
                         }
                     },
                 },
@@ -1434,9 +1426,6 @@ function chartPaint(isHistory){
                         normal: {
                             color: '#e22f2a',
                             color0: '#3bc25b'
-                        },
-                        emphasis: {
-                            color: '#000'
                         }
                     },
                 }
