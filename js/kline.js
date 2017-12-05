@@ -1390,7 +1390,7 @@ function chartPaint(isHistory){
                                         position: 'insideTopLeft',
                                         color: "#555",
                                         fontSize: 14,
-                                        offset: [10,5]
+                                        offset: [10,10]
                                     }
                                 },
                                 itemStyle: {
