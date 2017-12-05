@@ -1375,9 +1375,10 @@ function chartPaint(isHistory){
                                 valueDim: 'highest',
                                 label: {
                                     normal: {
-                                        position: 'inside',
-                                        color: "#000",
-                                        fontSize: 14
+                                        position: 'insideBottomLeft',
+                                        color: "#555",
+                                        fontSize: 14,
+                                        offset: [10,20]
                                     }
                                 },
                                 itemStyle: {
@@ -1392,8 +1393,8 @@ function chartPaint(isHistory){
                                 valueDim: 'lowest',
                                 label: {
                                     normal: {
-                                        position: 'bottom',
-                                        color: "#000",
+                                        position: 'insideTopLeft',
+                                        color: "#555",
                                         fontSize: 14
                                     }
                                 },
@@ -1521,7 +1522,7 @@ function chartResize() {
 
         $(".kline-buttons").css({"paddingLeft": name_width*k_width+1+"px"});
     }
-    $(".macd").css({"marginTop": 200/538*k_height*0.07+"px"})
+
     $(".bar-tools").css({"top": k_height*top_h+"px","height": 200/538*k_height});
 };
 // 设置成交量的单位变化状况
