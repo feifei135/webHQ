@@ -1526,12 +1526,3 @@
         return xml.initXML();
     };
 })(jQuery);
-function tabLi(index){
-    if(index==0){
-        $("#MLine").show();
-        $("#kline").hide();
-    }else{
-        $("#kline").show();
-        $("#MLine").hide();
-    }
-}

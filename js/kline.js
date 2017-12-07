@@ -15,7 +15,7 @@ var lastClose=0;
 		KLineSocket.turnOn = true;
 		// 区分点击的按钮是否是当前按钮
 		var lineShow = "mline";
-		$(".charts-tab li").on("click",function(){
+		$("#tab li").on("click",function(){
 			
 			// K线类型
 			var klineType = $(this).attr("id");
@@ -92,7 +92,15 @@ var lastClose=0;
 
 	};
 })(jQuery);
-
+function tabLi(index){
+    if(index==0){
+        $("#MLine").show();
+        $("#kline").hide();
+    }else{
+        $("#kline").show();
+        $("#MLine").hide();
+    }
+}
 // 指数/个股信息参数
 var ReqStockInfoOpt = function(option){
 	var ExchangeID = option.ExchangeID?option.ExchangeID:"101",
