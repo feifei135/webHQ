@@ -159,8 +159,24 @@
         });
         var timer;
         $(".fs-text").keyup(function(){
+
             // 连续按键会清除查询
             clearTimeout(timer);
+
+            // 点击回车
+            $("body").keydown(function() {
+                if (event.keyCode == "13") {//keyCode=13是回车键
+                    if($("#url_list li").length>0){
+                        queryNew($("#url_list li:eq(0)")[0]);
+                    }
+                }
+            });
+            $(".f-search input:eq(1)").click(function() {
+                if($("#url_list li").length>0){
+                    queryNew($("#url_list li:eq(0)")[0]);
+                }
+            });
+
             // 查询输入的值
             var value = $(this).val(); 
             // Code是不为空的数字时，进行查询
@@ -212,14 +228,8 @@
 
             // 点击选择了某个选项后 更新输入框内容 打开新页面查询新数据
             $("#url_list li").click(function(){
-                var exchangeID = $(this).attr("eid");
-                var id = Number($(this).children("span:eq(1)").text());
-                $(".fs-text").val($(this).children("span:eq(1)").text());
-                $("#url_list").hide();
-                // 打开新页面
-                var location = window.location.href.split("?")[0];
-                window.location.href = location+"?id="+id+"&exchangeID="+exchangeID;
-            })
+                queryNew(this);
+            });
 
             // 点击其他地方，关闭菜单
             $(document).click(function(){
@@ -228,10 +238,16 @@
             $("#url_list,.fs-text").click(function(event){
                 event.stopPropagation();
             });
+        };
+        function queryNew(eleLi){
+            var exchangeID = $(eleLi).attr("eid");
+            var id = Number($(eleLi).children("span:eq(1)").text());
+            $(".fs-text").val($(eleLi).children("span:eq(1)").text());
+            $("#url_list").hide();
+            // 打开新页面
+            var location = window.location.href.split("?")[0];
+            window.location.href = location+"?id="+id+"&exchangeID="+exchangeID;
         }
-
-
-
 
         /*
          * 分时图的下拉选择 线还是区域
