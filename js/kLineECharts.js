@@ -943,9 +943,9 @@ function splitData(data, isHistory) {
             e_amplPercent = (100*e_amplitude/lastClose);               // 振幅百分比
 
         if(isHistory){
-            e_volume = (e_price-e_open)>0?[i,e_volumnData,-1]:[i,e_volumnData,1];   // 成交量-数组，存储索引，值，颜色对应的值                         
+            e_volume = (e_price-e_open)>=0?[i,e_volumnData,-1]:[i,e_volumnData,1];   // 成交量-数组，存储索引，值，颜色对应的值                         
         }else{
-            e_volume = (e_price-e_open)>0?[KLineSocket.HistoryData.hVolumesList.length,e_volumnData,-1]:[KLineSocket.HistoryData.hVolumesList.length,e_volumnData,1];  
+            e_volume = (e_price-e_open)>=0?[KLineSocket.HistoryData.hVolumesList.length,e_volumnData,-1]:[KLineSocket.HistoryData.hVolumesList.length,e_volumnData,1];  
         }
 
         lastClose = e_price;

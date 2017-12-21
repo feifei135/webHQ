@@ -32,7 +32,6 @@ var lastClose=0;
 			KLineSocket.KLineSet = KLrequireObj.KLineSet;
 			// 发起websocket请求
 			initSocketEvent(KLineSocket, klineType);
-			
 
 			if(klineType=="mline"&&KLineSocket.turnOn){
 				return;
@@ -80,6 +79,7 @@ var lastClose=0;
 		reqStockInfo(StockSocket.option);
 	};
 })(jQuery);
+
 function tabLi(index){
     if(index==0){
         $("#MLine").show();
@@ -199,7 +199,10 @@ var KLineRequire = function(option, klineType){
 	this.HistoryData = {
 		hCategoryList: [],			// 横轴
 		hValuesList: [],			// 值-开收低高
-		hVolumesList: []			// 成交量
+		hVolumesList: [],			// 成交量
+		hValuesPercentList: [],		// 成交量百分比
+		hColorList: [],				// 颜色
+		hValueCJEList: []			// 成交额
 	};
 	this.KLineSet = {
 		mouseHoverPoint: 0,			// 当前现实的数据索引
@@ -594,12 +597,19 @@ function chartPaintHighCh(isHistory){
                         }
                     }];
     if(isHistory){
+    	var timer;
         // 绘制K线图
         KLineSocket.KChart = Highcharts.stockChart('kline_charts',{
             chart : {
                 backgroundColor: '#1e2131',
                 zoomType: 'x',
                 spacing: [20,100,20,20]
+            },
+            accessibility:{
+            	keyboardNavigation: {
+            		enabled: true,
+            		skipNullPoints: true
+            	}
             },
             rangeSelector: {
                 enabled: false
@@ -637,30 +647,7 @@ function chartPaintHighCh(isHistory){
                 },
                 useHTML: true,
                 formatter: function () {
-
-                    // 消息提示框的信息
-                    var strK = "";
-                    var strVolume = "";
-                    var strChange = "";
-                    $.each(this.points, function (i,pObj) {
-
-                        switch(pObj.point.series.name){
-                            case KLineSocket.HistoryData.seriesArr[0].name:
-                                strK= "Open <i>"+pObj.point.open+"</i><br>"
-                                    +"High <i>"+pObj.point.high+"</i><br>"
-                                    +"Low <i>"+pObj.point.low+"</i><br>"
-                                    +"Close <i>"+pObj.y+"</i><br>";
-                                strChange = "% Change <i>"+0+"</i><br>";
-                                break;
-                            case KLineSocket.HistoryData.seriesArr[1].name:
-                                strVolume = "Volume: <i>"+setUnit(pObj.y)+"</i><br>";
-                                break;
-                            default:;
-                        }
-                    });
-                    $(".f-kline-info").html(strK+strVolume+strChange);
-
-                    // tooltip消息
+                	// tooltip消息
                     var date;
                     switch(KLineSocket.option.lineType){
                         case "minute":
@@ -673,7 +660,13 @@ function chartPaintHighCh(isHistory){
                     }
                     var index = $.inArray(date,KLineSocket.HistoryData.hCategoryList),
                         value = setUnit(KLineSocket.HistoryData.hValueCJEList[index]),
-                        text = new Date(this.points[0].x).toLocaleDateString()+ "<br><i>"+(StockSocket.FieldInfo.Name?StockSocket.FieldInfo.Name:"")+" "+value+"</i>";
+                        // text = new Date(this.points[0].x).toLocaleDateString()+ "<br><i>"+(StockSocket.FieldInfo.Name?StockSocket.FieldInfo.Name:"")+" "+value+"</i>";
+                        text = new Date(this.points[0].x).toLocaleDateString()+ "<br><i>"+""+" "+value+"</i>";
+
+                    KLineSocket.KLineSet.mouseHoverPoint = index;
+                    
+                    setTooltipBox();
+
                     return text;
                 },
                 positioner: function (pw,ph,pos) {
@@ -709,7 +702,10 @@ function chartPaintHighCh(isHistory){
                 },
             },
             navigator:{
-                maskFill: 'rgba(43,46,61,0.5)'
+                maskFill: 'rgba(43,46,61,0.5)',
+                series:{
+                	color: '#a7a8aa'
+                }
             },
             colors: KLineSocket.HistoryData.hColorList,
             plotOptions: {
@@ -720,7 +716,21 @@ function chartPaintHighCh(isHistory){
                     upLineColor: '#c23a39',
                 },
                 series: {
-                    animation: false
+                    animation: false,
+                    point: {
+                    	events: {
+	                    	mouseOver: function(){
+	                    		clearTimeout(timer);
+	                    		$(".f-kline-info").show();
+	                    	},
+	                    	mouseOut: function(){
+	                    		timer = setTimeout(function(){
+	                    			$(".f-kline-info").fadeOut(200)
+	                    		},530);
+	                    	}
+	                    }
+                    }
+                    
                 },
                 column: {
                     colorByPoint: true
@@ -852,6 +862,35 @@ function chartPaintHighCh(isHistory){
         });
     }
 };
+// 消息提示框的信息
+function setTooltipBox(){
+	var index = KLineSocket.KLineSet.mouseHoverPoint;
+	
+	var values = "Open <i>" + KLineSocket.HistoryData.hValuesList[index][1] + "</i><br>"
+                + "High <i>" + KLineSocket.HistoryData.hValuesList[index][2] + "</i><br>"
+                + "Low <i>" + KLineSocket.HistoryData.hValuesList[index][3] + "</i><br>"
+                + "Close <i>" + KLineSocket.HistoryData.hValuesList[index][4] + "</i><br>";
+    var volumes = "Volume: <i>" + setUnit(KLineSocket.HistoryData.hVolumesList[index][1]) + "</i><br>";
+    var change = "% Change <i>" + floatFixedTwo(KLineSocket.HistoryData.hValuesPercentList[index]) + "</i><br>";
+    
+
+    // 更新
+    var k = false;
+    var v = false;
+    $.each(KLineSocket.KChart.series,function(i,sObj){
+    	switch(sObj.name){
+    		case "K线":
+    			k = true;
+    			break;
+    		case "Volume":
+    			v = true;
+    	}
+    });
+
+    var html = k?(values+(v?volumes:null)+change):v?volumes:null;
+
+    $(".f-kline-info").html(html);
+}
 // 解析获取到的数据
 function splitData(data, isHistory) {
     let k_categoryData = [],                // x轴分割线坐标数组
@@ -859,7 +898,8 @@ function splitData(data, isHistory) {
         k_volumns = [],                     // 柱形图数据-成交量
         week = ["日","一","二","三","四","五","六"],
         k_colors=[],
-        k_valueCJE = [];
+        k_valueCJE = [],
+        k_valuesPercent = [];
     // 遍历json，将它们push进不同的数组
     
     $.each(data,function(i,object){
@@ -867,6 +907,7 @@ function splitData(data, isHistory) {
         let e_date = formatDateSplit(object.Date),                 // 当天日期
             e_day = week[(new Date(e_date)).getDay()],        // 计算星期
             e_time;  
+
 
         switch(KLineSocket.option.lineType){
             case "minute":
@@ -882,6 +923,14 @@ function splitData(data, isHistory) {
             default:;
         } 
 
+        if(!lastClose){
+            lastClose = object.Open;                          // 上一根柱子的收盘价
+        }
+        // 如果是最后一条数据的更新，lastClose就是前一根柱子的收盘价
+        if(k_categoryData[0].toString() == KLineSocket.HistoryData.hCategoryList[KLineSocket.HistoryData.hCategoryList.length-1]){
+            lastClose = KLineSocket.HistoryData.hValuesList[KLineSocket.HistoryData.hValuesList.length-2][4];
+        }
+
         let e_open = (object.Open),          // 开
             e_highest = (object.High),       // 高
             e_lowest = (object.Low),         // 低
@@ -893,22 +942,33 @@ function splitData(data, isHistory) {
                 Number(e_lowest), 
                 Number(e_price)
             ],
-            e_volumnData = object.Volume,                              // 成交量---单位：股
-            e_valueCJE = (object.Value),
+            e_volumnData = object.Volume,                              	// 成交量---单位：股
+            e_valueCJE = (object.Value),								// 成交额
             e_colors = (e_price-e_open)>0?'#c23a39':'#44c96e',
-            e_volume = [e_time,Number(e_volumnData)];   // 成交量-数组，存储索引，值，颜色对应的值
+            e_volume = [e_time,Number(e_volumnData)],   				// 成交量-数组，存储索引，值，颜色对应的值
+            e_valuesPercent = ((e_price-lastClose)*100/lastClose);    	// 相对上一根柱子的收盘价
+            // [                                // 开收低高-百分比-相对上一根柱子的收盘价
+                // ((e_open-lastClose)*100/lastClose),
+                // ((e_highest-lastClose)*100/lastClose),
+                // ((e_lowest-lastClose)*100/lastClose),
+                // ((e_price-lastClose)*100/lastClose)
+            // ];
+
+        lastClose = e_price;
 
         // 每条数据存入数组中
         k_values.push(e_value);             
         k_volumns.push(e_volume);   
         k_colors.push(e_colors);
-        k_valueCJE.push(e_valueCJE)
+        k_valueCJE.push(e_valueCJE);
+        k_valuesPercent.push(e_valuesPercent);
     });
 
     // 返回K线图所需数据对象
     return {                        
         categoryData: k_categoryData,       
-        values: k_values,                 
+        values: k_values, 
+        valuesPercent: k_valuesPercent,           
         volumes: k_volumns,             
         colors: k_colors,
         valueCJE: k_valueCJE
@@ -921,15 +981,12 @@ function saveData(data, isHistory){
         KLineSocket.HistoryData.hValuesList = data.values;
         KLineSocket.HistoryData.hValuesPercentList = data.valuesPercent;
         KLineSocket.HistoryData.hVolumesList = data.volumes;
-        KLineSocket.HistoryData.hZValuesList = data.zValues;
-        KLineSocket.HistoryData.hZValuesListPercent = data.zValuePercent;
-        KLineSocket.HistoryData.hZf = data.amplitude;
-        KLineSocket.HistoryData.hZfList = data.amplPercent;
         KLineSocket.HistoryData.hColorList = data.colors;
         KLineSocket.HistoryData.hValueCJEList = data.valueCJE;
     }else{
         var n_category = data.categoryData[0];  // 最后一分钟的时间
         var n_values = data.values[0];          // 要存储的values
+        var n_valuePercentList = data.valuesPercent[0];	
         var n_volumes = data.volumes[0];            // 成交量
         var lastTime = KLineSocket.HistoryData.hCategoryList[KLineSocket.HistoryData.hCategoryList.length-1];
         var n_colorList = data.colors[0];
@@ -942,12 +999,14 @@ function saveData(data, isHistory){
             KLineSocket.HistoryData.hVolumesList[KLineSocket.HistoryData.hVolumesList.length-1] = n_volumes;
             KLineSocket.HistoryData.hColorList[KLineSocket.HistoryData.hColorList.length-1] = n_colorList;
             KLineSocket.HistoryData.hValueCJEList[KLineSocket.HistoryData.hValueCJEList.length-1] = n_valueCJE;
+        	KLineSocket.HistoryData.hValuesPercentList[KLineSocket.HistoryData.hValuesPercentList.length-1] = n_valuePercentList;
         }else{
             KLineSocket.HistoryData.hCategoryList.push(n_category);
             KLineSocket.HistoryData.hValuesList.push(n_values);
             KLineSocket.HistoryData.hVolumesList.push(n_volumes); 
             KLineSocket.HistoryData.hColorList.push(n_colorList);
             KLineSocket.HistoryData.hValueCJEList.push(n_valueCJE);
+            KLineSocket.HistoryData.hValuesPercentList.push(n_valuePercentList);
         };
     }
 };
@@ -955,20 +1014,32 @@ function saveData(data, isHistory){
 function setLegendButton(){
     var text="";
     $.each(KLineSocket.KChart.legend.allItems,function(i,obj){
-        text = text+"<li>"+obj.name+"<span>+</span></li>";
+    	if(i==0){
+    		text = text+"<li>"+obj.name+"</li>";
+    	}else{
+    		text = text+"<li>"+obj.name+"<span>+</span></li>";
+    	}
     });
     $(".f-legend").html(text);
     $("#kline_charts>div").append("<div class=\"f-kline-info\"></div>");
 
     // 点击legend-button标签
     $(".f-legend li span").click(function(){
+    	if($(this).parent().index()==0){
+    		return false;
+    	}
         // 点击的标签内容
         var seriesName = $(this).parent().text().replace("+","");
         // 删除按钮功能
         if($(this).parent().attr("class")!="remove"){
             $.each(KLineSocket.KChart.series,function(i){
                 if(this.name==seriesName){
-                    KLineSocket.KChart.series[i].remove(true);
+                	KLineSocket.KChart.series[i].remove(true);
+                	// console.log(i)
+                	// if(i==KLineSocket.HistoryData.seriesArr.length-1){
+                    	// KLineSocket.KChart.yAxis[0].height='100%';
+                    	// KLineSocket.KChart.redraw();
+                	// }
                 }
             });
             $(this).parent("li").addClass("remove");
@@ -982,10 +1053,5 @@ function setLegendButton(){
             $(this).parent("li").removeClass("remove");
         }
     });
-    $("#kline_charts > div").mouseover(function(){
-        $(".f-kline-info").show()
-    });
-    $("#kline_charts > div").mouseout(function(){
-        $(".f-kline-info").hide()
-    });
+    
 }
