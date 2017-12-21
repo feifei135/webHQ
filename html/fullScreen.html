@@ -40,7 +40,10 @@
         <ul class="f-legend">
             
         </ul>
-        <div id="kline_charts" class="fl f-kline-charts">
+        <div id="mline_charts" style="width:70%;height:730px;float:left;">
+            
+        </div>
+        <div id="kline_charts" class="fl f-kline-charts" style="display:none;">
             
         </div>
         
@@ -91,9 +94,9 @@
 	<script src="../js/public.js"></script> 
 
     <script src="../js/kLineHighCharts.js"></script>
+    <script src="../js/mLineHighCharts.js"></script>  <!-- 分时图  -->
+    
     <script type="text/javascript">
-
-
         $(function(){
 			// 行情echarts切换标签
             $(".container").toggleLi(
@@ -132,19 +135,28 @@
                     // 上证指数接口
                     wsUrl = "ws://172.17.20.203:7681";
                     stockXMlUrl = "http://172.17.20.203:6789/101";
+                    break;
             }
 
             // 初始化K线图
-            $.queryKLine({
-                InstrumentID: id,
-                ExchangeID: exchangeID,
-                wsUrl:wsUrl,
-                stockXMlUrl:stockXMlUrl
-            });
+            // $.queryKLine({
+            //     InstrumentID: id,
+            //     ExchangeID: exchangeID,
+            //     wsUrl:wsUrl,
+            //     stockXMlUrl:stockXMlUrl
+            // });
             
-            $.queryStockInfo({
-                InstrumentID: id,
-                ExchangeID: exchangeID,
+            // $.queryStockInfo({
+            //     InstrumentID: id,
+            //     ExchangeID: exchangeID,
+            //     wsUrl:wsUrl,
+            //     stockXMlUrl:stockXMlUrl
+            // });
+
+            //初始化分时图 
+            $("#mline_charts").initMline({
+                id: id,
+                exchangeID: exchangeID,
                 wsUrl:wsUrl,
                 stockXMlUrl:stockXMlUrl
             });
@@ -229,10 +241,6 @@
                 event.stopPropagation();
             });
         }
-
-
-
-
         /*
          * 分时图的下拉选择 线还是区域
          */

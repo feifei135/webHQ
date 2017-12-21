@@ -2,7 +2,7 @@ var wsUrlDevelop = 'ws://172.17.20.203:7681';//'ws://103.66.33.31:443';//开发
 var stockXMlUrl = "http://172.17.20.203:6789/101";//"../xml/ths.xml";//"http://172.17.20.203:6789/101";
 var exponentDateTime = [];//解析XML后得到的数组 所有指数的时间、类型、id、小数位数等
 var elementId;
-var ZSId;
+var ZSId,ExchangeID;
 var LSData = ZCData = DYData = QPDATA = null;
 
 $(function(){
@@ -22,20 +22,28 @@ $(function(){
             $("#main1").initMline(
                 {
                     id:"1",
+                    exchangeID:"2"
                 }
             );
             $("#main2").initMline(
                 {
-                    id:"1000",
+                    id:"2",
+                    exchangeID:"2"
                 }
             );
             $("#main3").initMline(
                 {
-                    id:"1500",
+                    id:"4",
+                    exchangeID:"2"
                 }
             );
         }
     }); 
+
+    // 点击其他地方收回搜索下拉列表
+    $("body").on("click",function(e){
+        $("#searchEnd").slideUp();
+    });
 });
 ;(function($,window,document,undefined){
     $.fn.initMline = function(options,params){
@@ -44,12 +52,14 @@ $(function(){
         $this = $(this);
         elementId = $this.attr("id");
         ZSId = options.id;
+        ExchangeID = options.exchangeID;
 
         socket = new WebSocketConnect();
         var ws = socket.createWebSocket();
 
         var opt = {
             id:ZSId,
+            exchangeID:ExchangeID,
             elementId:elementId,
             socket:socket,
         };
@@ -76,7 +86,7 @@ $(function(){
             // 获取历史数据
             LSData:{
                 "MsgType": "C213",
-                "ExchangeID": "101",
+                "ExchangeID": opt.exchangeID,
                 "InstrumentID": opt.id,
                 "StartIndex": "0",
                 "StartDate": "-1",
@@ -87,7 +97,7 @@ $(function(){
             ZCData:{
                 "MsgType":"S101",
                 "DesscriptionType":"3",
-                "ExchangeID":"101",
+                "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "Instrumenttype":"2"
             },
@@ -95,7 +105,7 @@ $(function(){
             DYData:{
                 "MsgType":"S101",
                 "DesscriptionType":"3",
-                "ExchangeID":"101",
+                "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "Instrumenttype":"5"
             },
@@ -103,7 +113,7 @@ $(function(){
             QPDATA:{
                 "MsgType":"S101",
                 "DesscriptionType":"3",
-                "ExchangeID":"101",
+                "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "Instrumenttype":"4"
             }
@@ -819,7 +829,7 @@ $(function(){
         var _target = this;
         var XTB = {
             "MsgType":"C646",
-            "ExchangeID":"101",
+            "ExchangeID":"2",
             "InstrumentID":ZSId
         };
         //建立socket连接
@@ -964,4 +974,66 @@ function getExponentDateTime(xmlCode,_codeList){
         }
     }
     return exponentDateTime;
+}
+// 搜索功能
+$("#searchInput").on("keyup",function(){
+    var val = $(this).val();
+    if(!val) return;
+    throttle(search,val);
+})
+var timer=null,delay=50;
+function throttle(method,value){
+    clearTimeout(timer);
+    method(value);
+    timer = setTimeout(function(){
+        timer=undefined;
+    },delay);
+}
+function search(value){
+    $.ajax({
+        url:"http://103.66.33.58:443",
+        data:{"ExchangeID":0,"Codes":value},
+        dataType:"json",
+        success:function(data){
+            if(data.ReturnCode == 9999){
+                console.log("请输入正确的股票代码");
+                $("#searchEnd").slideUp();
+            }else if(data.ReturnCode == 0){
+                $("#searchEnd").slideDown();
+                var htmlStr = '<tr class="stockTitle"><th>选项</th><th>类型</th><th>代码</th><th>中文名称</th></tr>';
+                var ds,dr;
+                data = data.CodeInfo;
+                for(let i=0;i<data.length;i++){
+                    htmlStr += '<tr class="stocklist">';
+                    ds = data[i].InstrumentCode.split(value);
+                    // 选项
+                    htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+ parseInt(data[i].InstrumentCode)+'">';
+                    for(let j=0;j<ds.length;j++){
+                        htmlStr += ds[j]+(j==ds.length-1?'':'<span class="highlight">'+value+'</span>');
+                    }
+                    htmlStr += '</a></td>';
+                    // 类型
+                    switch(data[i].ExchangeID){
+                        case 2:
+                        htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+parseInt(data[i].InstrumentCode)+'">深交所</a></td>';
+                        break;
+                        case 1:
+                        htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+parseInt(data[i].InstrumentCode)+'">上交所</a></td>';
+                        break;
+                        case 101:
+                        htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+parseInt(data[i].InstrumentCode)+'">指数</a></td>';
+                        break;
+                        default:
+                        break;
+                    }
+                    // 代码
+                    htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+parseInt(data[i].InstrumentCode)+'>'+data[i].InstrumentCode+'"</a></td>';
+                    // 名称
+                    htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+parseInt(data[i].InstrumentCode)+'>'+data[i].InstrumentCode+'">'+data[i].InstrumentName+'</a></td>';
+                    htmlStr += '</tr>';
+                }
+                $("#searchEnd table").html(htmlStr);
+            }
+        }
+    })
 }

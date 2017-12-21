@@ -529,7 +529,11 @@
                                     price[i] = data[j].Price;
                                     zdfData[i] = (((fvalue-yc)/yc)* 100).toFixed(2);
                                 }
-                                volume[i] = data[j].Volume;
+                                if(data[j].Price>data[j].Open){
+                                    volume[i] = [data[j].Volume,1];
+                                }else{
+                                    volume[i] = [data[j].Volume,-1];
+                                }
                                 if(fvalue > 0){
                                     r1 = Math.abs(fvalue - yc);
                                     if (r1 > $this.interval) {
@@ -1056,13 +1060,15 @@
                                 data: volume,
                                 itemStyle:{
                                     normal:{
-                                        color:function(params){
-                                //             if(params.value > 1000000){
-                                                // return '#e22f2a';
-                                //             }else{
-                                                return colorList[1];
-                                //             }
-                                        }
+                                        // color:function(params){
+                                            // console.log(params);
+                                            // if(params.value > 1){
+                                                color:colorList[0],
+                                                color:colorList[1]
+                                            // }else{
+                                                // return colorList[1];
+                                            // }
+                                        // }
                                     }
                                 }
                             },
