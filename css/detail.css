@@ -643,9 +643,12 @@ ul{
 	width: 360px;
 	top: 54px;
 	left: 0;
-	max-height: 288px;
+	max-height: 281px;
 	overflow-y: scroll;
 	display: none;
+}
+#url_list .active{
+	background-color: #274378;
 }
 #url_list::-webkit-scrollbar{  
     width: 13px;  
@@ -888,6 +891,7 @@ ul{
     font-size: 20px;
     color: rgba(255,255,255,0.5);
     top: 34px;
+    display: none;
 }
 .f-kline-info i{
 	float: right;
