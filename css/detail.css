@@ -410,7 +410,8 @@ ul{
 	/*z-index: 2;*/
 }
 .deal{
-	top: 53.7%;
+	/*top: 53.7%;*/
+	top: 73.4%;
 }
 .deal span,
 .macd span{
@@ -448,6 +449,7 @@ ul{
 }
 .volumn{
 	top: 57.5%;
+	top: 77%;
 	height: 9%;
 }
 .volMacd{
