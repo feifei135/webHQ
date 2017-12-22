@@ -295,13 +295,15 @@ body{
     display: none;
     border-width: 0 1px 1px 1px;
     border-color: #cacaca;
+    background-color: #F3F3F3;
     border-style: solid;
     padding: 5px 0 10px 0;
+    z-index: 100;
 }
 .search>table{
     border-collapse: collapse;
     line-height: 18px;
-    border: 2px solid #EEE;
+    /* border: 2px solid #EEE; */
     background-color: #FFF;
     font-size: 12px;
     text-align: center;
@@ -309,14 +311,13 @@ body{
     width: 100%;
     border-bottom: none;
 }
-.stockTitle{
-    background-color: #F3F3F3;
-}
 .stocklist{
     cursor: pointer;
-    background-color: rgb(241, 245, 252);
 }
 .stocklist:hover{
+    background-color: rgb(241, 245, 223);
+}
+.stocklist_active{
     background-color: rgb(241, 245, 223);
 }
 .stocklist>td>a{

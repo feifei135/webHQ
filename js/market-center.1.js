@@ -13,7 +13,6 @@ $(function(){
         dataType: 'xml',
         async:false,
         cache:false,
-        timeout:60000,
         error: function(xml){
             console.log("请求代码表出错");
         },
@@ -429,9 +428,8 @@ $(function(){
                 },
                 dataZoom:{
                     type:"inside",
-                    disabled:true,
-                    // xAxisIndex:0,
-                    // yAxisIndex:0,
+                    xAxisIndex:0,
+                    yAxisIndex:0,
                 },
                 tooltip:{
                     trigger:"axis",
@@ -774,50 +772,41 @@ $(function(){
         return $this.v_data;
     }
     //1、用id判断出是哪个指数，获取其开始时间和结束时间、保留小数位
-    function compareTime(dateList,id){
-        var decimal,typeIndex,sub;
-        var ZSInfo = new Array();
+    function compareTime(dateList,_options){
         for(let i=0;i<dateList.length;i++){
-            if( id == dateList[i].id ){
-                decimal = parseInt(dateList[i].decimalCount);//保留小数位数
-                typeIndex = dateList[i].type;//指数类型
-                var start = parseInt(dateList[i].startTime.split(":")[0]);
-                var end = parseInt(dateList[i].endTime.split(":")[0]);
+            if( _options.id == dateList[i].id ){
+                _options.decimal = parseInt(dateList[i].decimalCount);//保留小数位数
+                _options.typeIndex = dateList[i].type;//指数类型
+                var startT = parseInt(dateList[i].startTime.split(":")[0]);
+                var endT = parseInt(dateList[i].endTime.split(":")[0]);
                 if(dateList[i].endTime1){
-                    end = parseInt(dateList[i].endTime1.split(":")[0]);
+                    endT = parseInt(dateList[i].endTime1.split(":")[0]);
                 }
                 var json,json1;
-                if(start > end){//国际时间，需要将当前时间减一
+                if(startT > endT){//国际时间，跨天了，需要将当前时间减一
+                    sub = -1;
                     json = {
-                        ZSId:id,
-                        sub : -1,
-                        decimal:decimal,
-                        typeIndex:typeIndex,
                         startTime:dateList[i].startTime,
                         endTime:dateList[i].endTime1
                     };
-                    ZSInfo.push(json);
-                }else{
+                    _options.nowDateTime.push(json);
+                }else{//未跨天
+                    sub = 0;
                     json = {
-                        sub : 0,
-                        id:id,
-                        decimal:decimal,
-                        typeIndex:typeIndex,
                         startTime:dateList[i].startTime,
                         endTime:dateList[i].endTime
                     };
-                    ZSInfo.push(json);
+                    _options.nowDateTime.push(json);
                     if(dateList[i].startTime1){
                         json1 = {
                             startTime1:dateList[i].startTime1,
                             endTime1:dateList[i].endTime1
                         };
-                        ZSInfo.push(json1);
+                        _options.nowDateTime.push(json1);
                     }
                 }
             }
         }
-        return ZSInfo;
     }
     // 建立数据连接 websocket  
     var WebSocketConnect = function() {
@@ -884,89 +873,87 @@ function tabLi(index){
 }
 //从XML表中摘出时间，name,id，小数位,指数类型   公共方法   返回的是数组
 function getExponentDateTime(xmlCode,_codeList){
-        var startTime,endTime,startTime1,endTime1,ids,names,decimalCount,type,json;
-        var exponentDateTime = [];
-        for(var i=0;i<_codeList.length;i++){
-            if(_codeList[i].attributes["ts"]){
+    var startTime,endTime,startTime1,endTime1,ids,names,decimalCount,type,json;
+    var exponentDateTime = [];
+    for(var i=0;i<_codeList.length;i++){
+        if(_codeList[i].attributes["ts"]){
+            decimalCount = $($(_codeList[i]).parent("product")[0]).attr("PriceDecimal");
+            type = $($(_codeList[i]).parent("product")[0]).attr("type");
+            ids = _codeList[i].attributes["id"].value;
+            names = _codeList[i].attributes["name"].value;
+            if(_codeList[i].attributes["ts"].value.indexOf(";")>-1){
+                var st = _codeList[i].attributes["ts"].value.split(";")[0];
+                var et = _codeList[i].attributes["ts"].value.split(";")[1];
+                startTime = st.split("-")[0];
+                endTime = st.split("-")[1];
+                startTime1 = et.split("-")[0];
+                endTime1 = et.split("-")[1];
+            }else{
+                startTime = _codeList[i].attributes["ts"].value.split("-")[0];
+                endTime = _codeList[i].attributes["ts"].value.split("-")[1];
+                startTime1 = endTime1 = "";
+            }
+            json = {
+                id:ids,
+                name:names,
+                startTime:startTime,
+                endTime:endTime,
+                startTime1:startTime1,
+                endTime1:endTime1,
+                decimalCount:decimalCount,
+                type:type
+            };
+            exponentDateTime.push(json);
+        }else{
+            var elValue = $($(_codeList[i]).parent("product")[0]).attr("ts");
+            if(!elValue){
+                elValue = $($(_codeList[i]).parents("EXCHANGE")).attr("ts");
+                ids = $(_codeList[i]).attr("id");
+                names = $(_codeList[i]).attr("name");
+                type = $($(_codeList[i]).parent()).attr("type");
+                decimalCount = $($(_codeList[i]).parent()).attr("PriceDecimal");
+            }else{
                 decimalCount = $($(_codeList[i]).parent("product")[0]).attr("PriceDecimal");
                 type = $($(_codeList[i]).parent("product")[0]).attr("type");
                 ids = _codeList[i].attributes["id"].value;
                 names = _codeList[i].attributes["name"].value;
-                if(_codeList[i].attributes["ts"].value.indexOf(";")>-1){
-                    var st = _codeList[i].attributes["ts"].value.split(";")[0];
-                    var et = _codeList[i].attributes["ts"].value.split(";")[1];
-                    startTime = st.split("-")[0];
-                    endTime = st.split("-")[1];
-                    startTime1 = et.split("-")[0];
-                    endTime1 = et.split("-")[1];
-                }else{
-                    startTime = _codeList[i].attributes["ts"].value.split("-")[0];
-                    endTime = _codeList[i].attributes["ts"].value.split("-")[1];
-                    startTime1 = endTime1 = "";
-                }
-                json = {
-                    id:ids,
-                    name:names,
-                    startTime:startTime,
-                    endTime:endTime,
-                    startTime1:startTime1,
-                    endTime1:endTime1,
-                    decimalCount:decimalCount,
-                    type:type
-                };
-                exponentDateTime.push(json);
-            }else{
-                var elValue = $($(_codeList[i]).parent("product")[0]).attr("ts");
-                if(!elValue){
-                    elValue = $($(_codeList[i]).parents("EXCHANGE")).attr("ts");
-                    ids = $(_codeList[i]).attr("id");
-                    names = $(_codeList[i]).attr("name");
-                    type = $($(_codeList[i]).parent()).attr("type");
-                    decimalCount = $($(_codeList[i]).parent()).attr("PriceDecimal");
-                }else{
-                    decimalCount = $($(_codeList[i]).parent("product")[0]).attr("PriceDecimal");
-                    type = $($(_codeList[i]).parent("product")[0]).attr("type");
-                    ids = _codeList[i].attributes["id"].value;
-                    names = _codeList[i].attributes["name"].value;
-                }
-                if(elValue.indexOf(";")>-1){
-                    var st = elValue.split(";")[0];
-                    var et = elValue.split(";")[1];
-                    startTime = st.split("-")[0];
-                    endTime = st.split("-")[1];
-                    startTime1 = et.split("-")[0];
-                    endTime1 = et.split("-")[1];
-                    if($($(_codeList[i]).parent("product")[0]).attr("name") == "指数"){
-                        startTime1  = startTime1.split(":")[0] +":"+ parseInt(startTime1.split(":")[1])+"1";
-                    }
-                }else{
-                    startTime = elValue.split("-")[0];
-                    endTime = elValue.split("-")[1];
-                    startTime1 = endTime1 = "";
-                }
-                json = {
-                    id:ids,
-                    name:names,
-                    startTime:startTime,
-                    endTime:endTime,
-                    startTime1:startTime1,
-                    endTime1:endTime1,
-                    decimalCount:decimalCount,
-                    type:type
-                };
-                exponentDateTime.push(json);
             }
+            if(elValue.indexOf(";")>-1){
+                var st = elValue.split(";")[0];
+                var et = elValue.split(";")[1];
+                startTime = st.split("-")[0];
+                endTime = st.split("-")[1];
+                startTime1 = et.split("-")[0];
+                endTime1 = et.split("-")[1];
+                if($($(_codeList[i]).parent("product")[0]).attr("name") == "指数"){
+                    startTime1  = startTime1.split(":")[0] +":"+ parseInt(startTime1.split(":")[1])+"1";
+                }
+            }else{
+                startTime = elValue.split("-")[0];
+                endTime = elValue.split("-")[1];
+                startTime1 = endTime1 = "";
+            }
+            json = {
+                id:ids,
+                name:names,
+                startTime:startTime,
+                endTime:endTime,
+                startTime1:startTime1,
+                endTime1:endTime1,
+                decimalCount:decimalCount,
+                type:type
+            };
+            exponentDateTime.push(json);
         }
-        return exponentDateTime;
     }
+    return exponentDateTime;
+}
 // 搜索功能
-$("#searchInput").on("keyup",function(e){
+$("#searchInput").on("keyup",function(){
     var val = $(this).val();
     if(!val) return;
-    if(e.keyCode==13 || e.keyCode==38 || e.keyCode==40) return;
     throttle(search,val);
-});
-// 节流搜索
+})
 var timer=null,delay=50;
 function throttle(method,value){
     clearTimeout(timer);
@@ -975,7 +962,6 @@ function throttle(method,value){
         timer=undefined;
     },delay);
 }
-// 搜索
 function search(value){
     $.ajax({
         url:"http://103.66.33.58:443",
@@ -991,10 +977,10 @@ function search(value){
                 var ds,dr;
                 data = data.CodeInfo;
                 for(let i=0;i<data.length;i++){
-                    htmlStr += '<tr class="stocklist" data-exchangeID='+data[i].ExchangeID+' data-instrumentID='+(data[i].InstrumentCode)+'>';
+                    htmlStr += '<tr class="stocklist">';
                     ds = data[i].InstrumentCode.split(value);
                     // 选项
-                    htmlStr += '<td><a>';
+                    htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+ parseInt(data[i].InstrumentCode)+'">';
                     for(let j=0;j<ds.length;j++){
                         htmlStr += ds[j]+(j==ds.length-1?'':'<span class="highlight">'+value+'</span>');
                     }
@@ -1002,83 +988,25 @@ function search(value){
                     // 类型
                     switch(data[i].ExchangeID){
                         case 2:
-                        htmlStr += '<td><a>深交所</a></td>';
+                        htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+parseInt(data[i].InstrumentCode)+'">深交所</a></td>';
                         break;
                         case 1:
-                        htmlStr += '<td><a>上交所</a></td>';
+                        htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+parseInt(data[i].InstrumentCode)+'">上交所</a></td>';
                         break;
                         case 101:
-                        htmlStr += '<td><a>指数</a></td>';
+                        htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+parseInt(data[i].InstrumentCode)+'">指数</a></td>';
                         break;
                         default:
                         break;
                     }
                     // 代码
-                    htmlStr += '<td><a>'+data[i].InstrumentCode+'</a></td>';
+                    htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+parseInt(data[i].InstrumentCode)+'>'+data[i].InstrumentCode+'"</a></td>';
                     // 名称
-                    htmlStr += '<td><a>'+data[i].InstrumentName+'</a></td>';
+                    htmlStr += '<td><a href="./detail.html?exchangeID='+data[i].ExchangeID+'&id='+parseInt(data[i].InstrumentCode)+'>'+data[i].InstrumentCode+'">'+data[i].InstrumentName+'</a></td>';
                     htmlStr += '</tr>';
                 }
                 $("#searchEnd table").html(htmlStr);
             }
         }
     })
-}
-// 搜索结果绑定事件  跳转详情页面
-$(".search table").delegate("tr","click",function(){
-    var exchangeID = $(this).attr("data-exchangeID");
-    var instrumentID = $(this).attr("data-instrumentID");
-    $("#searchInput").val("");
-    $("#searchEnd").slideUp();
-    location.href = './detail.html?exchangeID='+exchangeID+'&id='+ parseInt(instrumentID);
-    // window.open('./detail.html?exchangeID='+exchangeID+'&id='+instrumentID);
-})
-// 点击搜索
-$(".search-btn").on("click",function(){
-    var value = $("#searchInput").val();
-    if(!value) return;
-    search(value);
-})
-// 38上、40下、13enter键
-var index = 0;
-function searchCode(event){
-    var _code = event.keyCode;
-    if($(".stocklist").length==0) return;
-    var len = $(".stocklist").length;
-    if(_code == 38){//按上键
-        index--;
-        if(index < 0) return;
-        var stockCode = $(".stocklist").eq(index).data("instrumentid");
-        $("#searchInput").val(stockCode).attr("data-exchangeID",$(".stocklist").eq(index).data("exchangeid"));
-    }else if(_code == 40){//按下键
-        index++;
-        if(index >= len) return;
-        var stockCode = $(".stocklist").eq(index).data("instrumentid");
-        $("#searchInput").val(stockCode).attr("data-exchangeID",$(".stocklist").eq(index).data("exchangeid"));
-    }
-
-    if(_code == 13){//按enter键
-        var value = $("#searchInput").val();  
-        var exchangeID = $("#searchInput").data("exchangeid");
-        if(!exchangeID && !value) return;
-        $.ajax({
-            url:"http://103.66.33.58:443",
-            data:{"ExchangeID":0,"Codes":value},
-            dataType:"json",
-            success:function(data){
-                if(data.ReturnCode == 9999){
-                    console.log("请输入正确的股票代码");
-                    $("#searchEnd").slideUp();
-                }else if(data.ReturnCode == 0){
-                    if(data.CodeInfo.length==1){
-                        location.href = './detail.html?exchangeID='+exchangeID+'&id='+parseFloat(value);
-                    }else{
-                        $("#searchEnd").slideUp();
-                        $("#searchEnd").slideDown();
-                        // location.href = './detail.html?exchangeID='+exchangeID+'&id='+parseFloat(value);
-                    }
-                }
-            }
-        })
-    }
 }

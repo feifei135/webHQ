@@ -93,6 +93,7 @@
             history_data:[],//价格历史数据
             z_history_data:[],//涨跌幅历史数据
             a_history_data:[],//成交量
+            flag_data : [], //成交量颜色记录 1为红 -1为绿
             //订阅快照请求
             HQAll : {
                 "MsgType":"S101",
@@ -140,6 +141,7 @@
             dataType: 'xml',
             async:false,
             cache:false,
+            timeout:60000,
             error: function(xml){
                 console.log("请求代码表出错");
             },
@@ -371,6 +373,7 @@
                     var last_date = dateToStamp(formatDate(a_lastData[0].Date) +" " + last_dataTime);//最新时间时间戳
                     var zVale = parseFloat(((parseFloat(a_lastData[0].Price) - parseFloat(yc)) / parseFloat(yc) * 100).toFixed(2)); //行情最新涨跌幅
                     var aValue = parseFloat(a_lastData[0].Volume); //最新成交量
+                    var flag = parseFloat(a_lastData[0].Price) - parseFloat(a_lastData[0].Open) >= 0 ? 1:-1;//成交量最新颜色标识
 
                     if((parseFloat(a_lastData[0].Price)) >= limitUp){
                         a_lastData[0].Price = limitUp;
@@ -383,16 +386,19 @@
                             $this.history_data[i] = parseFloat(a_lastData[0].Price);
                             $this.z_history_data[i] = parseFloat(zVale);
                             $this.a_history_data[i] = parseFloat(aValue);
+                            $this.flag_data[i] = flag;
                             // 中间有断开
                             if(i > ($this.history_data.length-1) ){
                                 for(var j=$this.history_data.length-1;j<=i;j++){
                                     $this.history_data[j].push(null);
                                     $this.z_history_data[j].push(null);
                                     $this.a_history_data[j].push(null);
+                                    $this.flag_data[j].push(null);
                                     if(j == i){
                                         $this.history_data[j] = parseFloat(a_lastData[0].Price);
                                         $this.z_history_data[j] = parseFloat(zVale);
                                         $this.a_history_data[j] = parseFloat(aValue);
+                                        $this.flag_data[j] = flag;
                                     }
                                 }
                             }
@@ -406,7 +412,6 @@
                         $this.z_history_data[$this.z_history_data.length - 1],
                         $this.a_history_data[$this.a_history_data.length - 1] / 100,
                         formatDate(parseFloat($this.c_data[$this.history_data.length - 1]),"0")
-                        // moment(parseFloat($this.c_data[$this.history_data.length - 1])).format("YYYY-MM-DD HH:mm")
                     ];
                     set_marketTool(marktToolData,$this); //设置动态行情条
                     var fvalue, r1;
@@ -485,7 +490,18 @@
                                 data: $this.z_history_data
                             },
                             {
-                                data: $this.a_history_data
+                                data: $this.a_history_data,
+                                itemStyle:{
+                                    normal:{
+                                        color:function(params){
+                                            if($this.flag_data[params.dataIndex] > 0){
+                                                return colorList[0];
+                                            }else{
+                                                return colorList[1];
+                                            }
+                                        }
+                                    }
+                                }
                             },
                             // {
                             //     data: a_history_data
@@ -506,6 +522,7 @@
                     var price = [];//价格
                     var volume = [];//成交量
                     var zdfData = [];//涨跌幅
+                    var flag = [];//现价-开盘价 值为1和-1
                     $this.v_data = getxAxis(data[0].Date,$this);
                     // var lastDate = moment(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)).utc().valueOf();
                     var lastDate = dateToStamp(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time));
@@ -529,11 +546,10 @@
                                     price[i] = data[j].Price;
                                     zdfData[i] = (((fvalue-yc)/yc)* 100).toFixed(2);
                                 }
-                                if(data[j].Price>data[j].Open){
-                                    volume[i] = [data[j].Volume,1];
-                                }else{
-                                    volume[i] = [data[j].Volume,-1];
-                                }
+                                
+                                volume[i] = data[j].Volume;
+                                flag[i] = (parseFloat(data[j].Price)-parseFloat(data[j].Open)) >= 0 ? 1 : -1;
+                                
                                 if(fvalue > 0){
                                     r1 = Math.abs(fvalue - yc);
                                     if (r1 > $this.interval) {
@@ -545,6 +561,7 @@
                                 price[i] = null;
                                 volume[i] = null;
                                 zdfData[i] = null;
+                                flag[i] = null;
                             }
                         }
                     }
@@ -552,6 +569,7 @@
                     $this.history_data = price;//价格历史数据
                     $this.z_history_data = zdfData;//涨跌幅历史数据
                     $this.a_history_data = volume;//成交量历史数据
+                    $this.flag_data = flag;//成交量颜色标识
                     //取绝对值  差值 
                     $this.interval = $this.interval + $this.interval*0.1;
                     if (yc) {
@@ -1060,15 +1078,13 @@
                                 data: volume,
                                 itemStyle:{
                                     normal:{
-                                        // color:function(params){
-                                            // console.log(params);
-                                            // if(params.value > 1){
-                                                color:colorList[0],
-                                                color:colorList[1]
-                                            // }else{
-                                                // return colorList[1];
-                                            // }
-                                        // }
+                                        color:function(params){
+                                            if(flag[params.dataIndex] > 0){
+                                                return colorList[0];
+                                            }else{
+                                                return colorList[1];
+                                            }
+                                        }
                                     }
                                 }
                             },
@@ -1230,7 +1246,6 @@
     });
     // 按键对应的move函数
     function move(index, type) {
-        
         if($("#MLine").css("display") == "none") {
             // 获取dataZoom起始位置和结束位置，比较他的信息，设置他的位置
             var KStart = KLineSocket.KChart.getOption().dataZoom[0].start,
@@ -1352,13 +1367,13 @@
         }
     };
 
-
     // 接收到清盘指令重绘图表
     function redrawChart(data,$this){
         $this = $this.options;
         $this.history_data = []; //价格历史记录
         $this.z_history_data = []; //涨跌幅历史记录
         $this.a_history_data = []; //成交量记录
+        $this.flag_data = []; //成交量颜色记录 1为绿 -1为红
         $this.v_data = [];
         $this.c_data = [];
         var decimal = $this.decimal;
