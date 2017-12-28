@@ -52661,18 +52661,15 @@ function processOnAxis(axisInfo, newValue, updaters, dontSnap, outputFinder) {
     // 修改 -Gao
     if (!dontSnap && axisInfo.snap) {
         if (axis.containData(snapToValue) && snapToValue != null) {
-            
-
             var dataIndex = outputFinder.dataIndex;
             var series = axisInfo.seriesModels[0].ecModel.option.series;
             for(var i=0;i<series.length;i++){
                 var data = series[i].data;
-                console.log(data)
                 if(series[i].type=="candlestick"){
                     newValue = Number(data[dataIndex][2]);
                     break;
                 }
-                if(series[i].type=="line"){
+                if(series[i].type=="line" && series[i].name=="Mline"){
                     newValue = Number(data[dataIndex]);
                     break;
                 }

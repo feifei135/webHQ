@@ -800,7 +800,7 @@
                                             return (params.value);
                                         },
                                         padding:[3,5,5,5],
-                                        show:true
+                                        show:false
                                     }
                                 },
                                 splitArea:{
@@ -827,6 +827,9 @@
                                 axisPointer:{
                                     lineStyle:{
                                         color:"transparent"
+                                    },
+                                    label:{
+                                        show:false
                                     }
                                 }
                             }
@@ -874,13 +877,13 @@
                                     }
                                 },
                                 axisPointer: {
-                                    // show:false,
+                                    show:false,
                                     label: {
                                         formatter: function (params, value, s) {
                                             return parseFloat(params.value).toFixed(2) + "%";
                                         }
                                     },
-                                    snap: true,
+                                    // snap: true
                                 }
                             },
                             {
@@ -934,7 +937,7 @@
                                             return parseFloat(params.value).toFixed($this.decimal);
                                         }
                                     },
-                                    snap: true,
+                                    snap: true
                                 }
                             },
                             {
