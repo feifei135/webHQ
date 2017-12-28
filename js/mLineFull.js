@@ -691,8 +691,7 @@
                                 type:'cross',
                                 crossStyle:{
                                     color:'rgba(255,255,255,0.5)',
-                                },
-                                snap:true
+                                }
                             },
                         },
                         dataZoom: [
@@ -880,7 +879,8 @@
                                         formatter: function (params, value, s) {
                                             return parseFloat(params.value).toFixed(2) + "%";
                                         }
-                                    }
+                                    },
+                                    snap: true,
                                 }
                             },
                             {
@@ -929,10 +929,12 @@
                                         type:"dashed"
                                     },
                                     label: {
+                                        show: true,
                                         formatter: function (params, value, s) {
                                             return parseFloat(params.value).toFixed($this.decimal);
                                         }
-                                    }
+                                    },
+                                    snap: true,
                                 }
                             },
                             {
@@ -948,7 +950,10 @@
                                     show:false
                                 },
                                 gridIndex: 1,
-                                splitNumber: 2
+                                splitNumber: 2,
+                                axisPointer: {
+                                    show:false
+                                }
                             }
                         ],
                         series: [

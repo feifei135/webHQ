@@ -51,12 +51,9 @@
                 </ul>
             </div>
         </div>
-
-        <ul class="f-legend">
-
-        </ul>
+        
         <!-- 分时图 -->
-        <div class="mline">
+        <div class="mline" id="MLine">
             <div id="mline_charts" class="mline_full" style="width:100%;height:730px;">
                 暂无数据
                 <!-- 提示框 -->
@@ -98,10 +95,31 @@
                 <span class="arrow"></span>
             </div> -->
         </div>
-        <div id="kline_charts" class="fl f-kline-charts" style="display:none;">
 
+        <!--K线图开始-->
+        <div class="canvas kline fl f-kline" id="kline" style="display: none;">
+            <div class="no-data no-data-k" id="withoutData">亲，暂时没有数据哦~~~~ ^_^</div>
+            <!-- echarts图开始 -->
+            <div class="kline-charts-container">
+                <div id="f_kline_charts" class="f-kline-charts">
+                    <span id="markNewPoint">444</span>
+                </div>
+                <div id="kline_tooltip" class="f-kline-info">
+                    <ul class="list-unstyled">
+                        <!-- <li><span class="name"></span></li> -->
+                        <!-- <li class="text-justify"><span class="date"></span><span class="day"></span><span class="time"></span></li> -->
+                        <li>Open<span class="open fr"></span></li>
+                        <li>High<span class="highest fr"></span></li>
+                        <li>Low<span class="lowest fr"></span></li>
+                        <li>Close<span class="price fr"></span></li>
+                        <li>Volume<span class="volume fr"></span></li>
+                        <li>% Change<span class="z-value fr"></span></li>
+                    </ul>
+                </div>
+            </div>
+            <!-- echarts图结束 -->
         </div>
-
+        <!--K线图结束-->
         <!-- 右侧信息框开始 -->
         <div class="fr f-stockInfo">
             <!-- <div class="no-data no-data-k" id="withoutStockData"></div> -->
@@ -191,18 +209,21 @@
 
     </div>
 
-    <script src="../js/jquery.js"></script>
-    <script src="../js/echarts.min.js"></script>
-    <script src="../js/moment.min.js"></script>
-    <script src="../js/public.js"></script>
 
-    <script src="../js/kLineHighCharts.js"></script>
+    <script src="../js/jquery.js"></script>
+    <script src="../js/echarts.js"></script>
+    <script src="../js/moment.min.js"></script>
+    <script src="../js/public.js"></script> <!-- 公共方法 -->
+
     <!-- 分时图  -->
     <script src="../js/mLineFull.js"></script>
 
+    <script type="text/javascript" src="../js/kLineFull.js"></script> <!-- K线 -->
+    
     <script type="text/javascript">
-        $(function () {
-            // 行情echarts切换标签
+
+        $(function(){
+			// 行情echarts切换标签
             $(".container").toggleLi(
                 {
                     data: [
@@ -243,19 +264,19 @@
             }
 
             // 初始化K线图
-            // $.queryKLine({
-            //     InstrumentID: id,
-            //     ExchangeID: exchangeID,
-            //     wsUrl: wsUrl,
-            //     stockXMlUrl: stockXMlUrl
-            // });
+            $.queryKLine({
+                InstrumentID: id,
+                ExchangeID: exchangeID,
+                wsUrl: wsUrl,
+                stockXMlUrl: stockXMlUrl
+            });
 
-            // $.queryStockInfo({
-            //     InstrumentID: id,
-            //     ExchangeID: exchangeID,
-            //     wsUrl: wsUrl,
-            //     stockXMlUrl: stockXMlUrl
-            // });
+            $.queryStockInfo({
+                InstrumentID: id,
+                ExchangeID: exchangeID,
+                wsUrl: wsUrl,
+                stockXMlUrl: stockXMlUrl
+            });
 
             //初始化分时图 
             $("#mline_charts").initMline({
@@ -264,19 +285,21 @@
                 wsUrl: wsUrl,
                 stockXMlUrl: stockXMlUrl
             });
+
             $.selectOption({
                 container: ".f-search",
                 input: ".fs-text",
                 submit: "#fSearch",
                 list: "#url_list"
             });
-        });
+
+        }); 
 
 
         /*
          * 查询下拉框效果
          */
-        ; (function ($) {
+        ;(function ($) {
             /*
              * 查询下拉框效果
              */
@@ -307,135 +330,143 @@
             });
 
             $.selectOptionEl.prototype = {
-                bingKeyUpEvents: function () {
-                    var ele = this;
-                    // 绑定键盘事件
-                    $(ele.options.input).keyup(function (e) {
-                        var keyCode = e.keyCode ? e.keyCode : 8;
-                        // 查询输入的值
-                        var value = $(this).val();
-                        // Code是不为空的数字时，进行查询
-                        if ((keyCode == 8 || keyCode >= 48 && keyCode <= 57 || keyCode >= 65 && keyCode <= 90) && value != "" && value != null) {
-                            // 延时查询
-                            ele.options.timer = setTimeout(function () {
-                                var url = "http://103.66.33.58:443/?ExchangeID=0&Codes=" + value;
-                                $.ajax({
-                                    url: url,
-                                    type: 'GET',
-                                    dataType: 'json',
-                                    async: false,
-                                    cache: false,
-                                    error: function (data) {
-                                        console.log("请求代码表出错");
+                bingKeyUpEvents:    function(){
+                                        var ele = this;
+                                        // 绑定键盘事件
+                                        $(ele.options.input).keyup(function(e){
+                                            var keyCode = e.keyCode?e.keyCode:8;
+                                            // 查询输入的值
+                                            var value = $(this).val();
+                                            // Code是不为空的数字时，进行查询
+                                            if((keyCode==8||keyCode>=48&&keyCode<=57||keyCode>=65&&keyCode<=90)&&value!=""&&value!=null){
+                                                // 延时查询
+                                                ele.options.timer = setTimeout(function(){
+                                                    var url = "http://103.66.33.58:443/?ExchangeID=0&Codes="+value;
+                                                    $.ajax({
+                                                        url:  url,
+                                                        type: 'GET',
+                                                        dataType: 'json',
+                                                        async:false,
+                                                        cache:false,
+                                                        error: function(data){
+                                                            console.log("请求代码表出错");
+                                                        },
+                                                        success: function(data){
+                                                            indexLi = 0;
+                                                            var dataArr = data.CodeInfo;
+                                                            if(dataArr){
+                                                                ele.setSearchUlOptions(dataArr,value);
+                                                                $(ele.options.list).show();
+                                                            }else{
+                                                                $(ele.options.list).hide();
+                                                            }
+                                                        }
+                                                    });
+                                                },300);
+                                            }else{
+                                                // 连续按键会清除查询
+                                                clearTimeout(ele.options.timer);
+                                            }
+                                            switch (keyCode) {
+                                                case 8:
+                                                    if(value==""||value==null){
+                                                        $(ele.options.list).hide();
+                                                    }
+                                                    break;
+                                                case 13:    // 回车
+                                                    $(ele.options.submit).click();
+                                                    break;
+                                                case 38:
+                                                    ele.moveSelectOption(-1);
+                                                    break;  //上
+                                                case 40:
+                                                    ele.moveSelectOption(1);
+                                                    break; //下
+                                                default:;
+                                            }
+                                        });
                                     },
-                                    success: function (data) {
-                                        indexLi = 0;
-                                        var dataArr = data.CodeInfo;
-                                        if (dataArr) {
-                                            ele.setSearchUlOptions(dataArr, value);
-                                            $(ele.options.list).show();
-                                        } else {
-                                            $(ele.options.list).hide();
-                                        }
-                                    }
+                bindClose:  function () {
+                                var ele = this;
+                                // 点击其他地方，关闭菜单
+                                $(document).click(function () {
+                                    $(ele.options.list).hide();
                                 });
-                            }, 300);
-                        } else {
-                            // 连续按键会清除查询
-                            clearTimeout(ele.options.timer);
-                        }
-                        switch (keyCode) {
-                            case 13:    // 回车
-                                $(ele.options.submit).click();
-                                break;
-                            case 38:
-                                ele.moveSelectOption(-1);
-                                break;  //上
-                            case 40:
-                                ele.moveSelectOption(1);
-                                break; //下
-                            default: ;
-                        }
-                    });
-                },
-                bindClose: function () {
-                    var ele = this;
-                    // 点击其他地方，关闭菜单
-                    $(document).click(function () {
-                        $(ele.options.list).hide();
-                    });
-                    $(ele.options.list + "," + ele.options.input).click(function (event) {
-                        event.stopPropagation();
-                    });
-                },
-                bindSubmit: function () {
-                    var ele = this;
-                    // 点击搜索按钮
-                    $(ele.options.submit).click(function () {
-                        if ($(ele.options.list).children("li").length > 0) {
-                            ele.queryNew($(ele.options.list).children(".active")[0]);
-                        }
-                    });
+                                $(ele.options.list + "," + ele.options.input).click(function (event) {
+                                    event.stopPropagation();
+                                });
+                            },
+                bindSubmit:     function () {
+                                    var ele = this;
+                                    // 点击搜索按钮
+                                    $(ele.options.submit).click(function () {
+                                        if ($(ele.options.list).children("li").length > 0) {
+                                            ele.queryNew($(ele.options.list).children(".active")[0]);
+                                        }
+                                    });
 
-                },
+                                },
                 // 点击搜索框会出现
-                bindFocus: function () {
-                    var ele = this;
-                    $(ele.options.input).focus(function () {
-                        $(ele.options.input).keyup();
-                    });
-                },
+                bindFocus:      function () {
+                                    var ele = this;
+                                    $(ele.options.input).focus(function () {
+                                        $(ele.options.input).keyup();
+                                    });
+                                },
                 // 键盘上下键响应事件
-                moveSelectOption: function (direct) {
-                    indexLi += direct;
-                    if (direct == -1) {
-                        if (indexLi < 0) {
-                            indexLi = $("#url_list li").length - 1;
-                        }
-                    } else {
-                        if (indexLi > $("#url_list li").length - 1) {
-                            indexLi = 0;
-                        }
-                    }
-                    $(this.options.list).children("li").eq(indexLi).addClass("active").
-                        siblings().removeClass("active");
-                    $(this.options.list).scrollTop(46 * (indexLi > 0 ? (indexLi - 3) : 0));
-                },
+                moveSelectOption:   function (direct) {
+                                        indexLi += direct;
+                                        if (direct == -1) {
+                                            if (indexLi < 0) {
+                                                indexLi = $("#url_list li").length - 1;
+                                            }
+                                        } else {
+                                            if (indexLi > $("#url_list li").length - 1) {
+                                                indexLi = 0;
+                                            }
+                                        }
+                                        $(this.options.list).children("li").eq(indexLi).addClass("active").
+                                            siblings().removeClass("active");
+                                        $(this.options.list).scrollTop(46 * (indexLi > 0 ? (indexLi - 3) : 0));
+                                    },
                 // 拼接查询到的接口数据
                 setSearchUlOptions: function (data, value) {
-                    var ele = this;
-                    var html = "";
-                    $.each(data, function (i, dataObj) {
-                        var spanName = "<span>" + dataObj.InstrumentName + "</span>",
-                            spanCode = "<span>" + dataObj.InstrumentCode + "</span>";
-                        // 是否有值，如果没有输入值，不进行匹配
-                        if (eval("/" + value + "/").test(spanName) || eval("/" + value + "/").test(spanCode)) {
-                            spanName = spanName.replace(eval("/" + value + "/"), "<i>" + value + "</i>");
-                            spanCode = spanCode.replace(eval("/" + value + "/"), "<i>" + value + "</i>");
-                        };
-                        html += "<li eId=" + dataObj.ExchangeID + ">" + spanName + spanCode + "</li>";
-                    });
-                    $(ele.options.list).html(html);
-                    if ($(ele.options.list).children("li").length > 0) $(ele.options.list).children("li:eq(0)").addClass("active");
-                    // 点击选择了某个选项后 更新输入框内容 打开新页面查询新数据
-                    $(ele.options.list).children("li").click(function () {
-                        ele.queryNew(this);
-                    });
-                },
-                queryNew: function (eleLi) {
-                    var ele = this;
-                    var exchangeID = $(eleLi).attr("eid");
-                    var id = Number($(eleLi).children("span:eq(1)").text());
-                    $(ele.options.input).val($(eleLi).children("span:eq(1)").text());
-                    $(ele.options.list).hide();
-                    // 打开新页面
-                    var location = window.location.href.split("?")[0];
-                    window.location.href = location + "?id=" + id + "&exchangeID=" + exchangeID;
-                }
+                                        var ele = this;
+                                        var html = "";
+                                        $.each(data, function (i, dataObj) {
+                                            var spanName = "<span>" + dataObj.InstrumentName + "</span>",
+                                                spanCode = "<span>" + dataObj.InstrumentCode + "</span>";
+                                            // 是否有值，如果没有输入值，不进行匹配
+                                            if (eval("/" + value + "/").test(spanName) || eval("/" + value + "/").test(spanCode)) {
+                                                spanName = spanName.replace(eval("/" + value + "/"), "<i>" + value + "</i>");
+                                                spanCode = spanCode.replace(eval("/" + value + "/"), "<i>" + value + "</i>");
+                                            };
+                                            html += "<li eId=" + dataObj.ExchangeID + ">" + spanName + spanCode + "</li>";
+                                        });
+                                        $(ele.options.list).html(html);
+                                        if ($(ele.options.list).children("li").length > 0) $(ele.options.list).children("li:eq(0)").addClass("active");
+                                        // 点击选择了某个选项后 更新输入框内容 打开新页面查询新数据
+                                        $(ele.options.list).children("li").click(function () {
+                                            ele.queryNew(this);
+                                        });
+                                    },
+                queryNew:       function (eleLi) {
+                                    var ele = this;
+                                    var exchangeID = $(eleLi).attr("eid");
+                                    var id = Number($(eleLi).children("span:eq(1)").text());
+                                    $(ele.options.input).val($(eleLi).children("span:eq(1)").text());
+                                    $(ele.options.list).hide();
+                                    // 打开新页面
+                                    var location = window.location.href.split("?")[0];
+                                    window.location.href = location + "?id=" + id + "&exchangeID=" + exchangeID;
+                                }
 
             };
 
         })(jQuery);
+
+
+
         /*
          * 分时图的下拉选择 线还是区域
          */
