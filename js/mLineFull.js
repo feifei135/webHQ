@@ -1559,8 +1559,13 @@
         return xml.initXML();
     };
 
-    $(window).on('resize',function(){
-        myChart.resize({width:"auto",height:"auto"});
-    })
+    // ecahrts图进行缩放
+    $(window).resize(function(){
+        if($("#kline").css("display")=="none"){
+            myChart.resize({width:"auto",height:"auto"});
+        }else{
+            chartResize();
+        }         
+    });
 
 })(jQuery);

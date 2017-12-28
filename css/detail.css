@@ -711,7 +711,7 @@ ul{
 .f-stockInfo{
 	width: 25.44%;
 	/*width: 100%;*/
-	/*margin-top: 40px;*/
+	margin-top: 40px;
 }
 
 .f-tb-fieldName{
@@ -863,6 +863,7 @@ ul{
 	position: relative;
 	float: left;
 	width: 70%;
+	margin-top: 40px;
 }
 .mline_full{
 	text-align: center;

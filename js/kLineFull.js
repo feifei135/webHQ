@@ -570,11 +570,6 @@ function KCharts(socket, dataList, isHistory){
         /*
          * K线图事件绑定
          */
-        // ecahrts图进行缩放
-        $(window).resize(function(){
-
-            chartResize(); 
-        });
         KLineSocket.KChart.on('showTip', function (params) {
             
             KLineSocket.KLineSet.mouseHoverPoint = params.dataIndex;
