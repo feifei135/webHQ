@@ -1025,7 +1025,7 @@ function search(value){
     })
 }
 // 搜索结果绑定事件  跳转详情页面
-$(".search table").delegate("tr","click",function(){
+$(".search table").delegate(".stocklist","click",function(){
     var exchangeID = $(this).attr("data-exchangeID");
     var instrumentID = $(this).attr("data-instrumentID");
     $("#searchInput").val("");

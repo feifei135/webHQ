@@ -19,7 +19,7 @@ h2{
 	line-height: 16px;
 	margin-bottom: 18px;
 }
-em{
+i,em{
 	font-style: normal;
 	font-size: 14px;
 }
@@ -694,6 +694,7 @@ ul{
 .content{
 	position: relative;
 	overflow: hidden;
+	padding-bottom: 100px;
 }
 .f-kline-charts{
 	width: 72.916%;
@@ -897,4 +898,86 @@ ul{
 }
 .f-kline-info i{
 	float: right;
+}
+
+/* 分时图 */
+.mline{
+	position: relative;
+	float: left;
+	width: 70%;
+}
+.mline_full{
+	text-align: center;
+	font-size: 18px;
+	color: #a7a8aa;
+}
+/* 分时图提示框 */
+.mline_tooltip{
+	position: absolute;
+	left: 10px;
+	top: 10px;
+	background-color: #1e2131;
+	border: 1px solid #232735;
+	padding: 10px 20px;
+	box-shadow:0px 0px 7px rgba(0,0,0,0.35);
+	display: inline-block;
+	line-height: 30px;
+	font-family: Helvetica;
+	font-size: 20px;
+	font-style: normal;
+	min-width: 240px;
+	border-radius: 3px;
+	display: none;
+}
+.mline_tooltip>span{
+	overflow: hidden;
+	display:block;
+}
+.mline_tooltip>span>label{
+	color: rgba(255, 255, 255, 0.5);
+	float: left;
+}
+.mline_tooltip>span>i{
+	color: #fff;
+	float: right;
+	font-size: 20px;
+}
+/* 浮层信息框 */
+.mline_info{
+	box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
+	border:1px solid #264378;
+	border-radius: 3px;
+	padding: 10px 20px;
+	display: inline-block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	background-color:#1e2131;
+	/* display: none; */
+}
+.mline_info>span{
+	font-family: Helvetica,Arial,sans-serif;
+	display: block;
+	color: rgba(255, 255, 255, 0.5);
+	font-size: 20px;
+	line-height: 30px;
+}
+.mline_info>span:last-child{
+	color: #fff;
+	font-size: 24px;
+	margin-top: 10px;
+}
+.lastPrice{
+	font-size: 24px;
+}
+.mline_info>.arrow{
+	background: url(../img/arrow.png) no-repeat;
+    background-color: #1e2131;
+    display: block;
+    width: 26px;
+    height: 12px;
+    position: absolute;
+	bottom: -10px;
+	left: 50%;
+	transform: translateX(-100%);
 }
