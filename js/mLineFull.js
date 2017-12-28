@@ -519,7 +519,7 @@
                                             }
                                         }
                                     }]
-                                },
+                                }
                             },
                             {
                                 data: $this.a_history_data,
@@ -644,16 +644,16 @@
                         animation: false,
                         grid: [
                             {
-                                top: "5%",
-                                left:'5%',
-                                right:'5%',
-                                height:'630px'
+                                top: 10,
+                                left:80,
+                                right:80,
+                                height:'630px',
                             },
                             {
-                                left:'5%',
-                                right:'5%',
-                                bottom: '8.8%',
-                                height: '20%'
+                                left:80,
+                                right:80,
+                                bottom: 90,
+                                height: '20%',
                             }
                         ],
                         title: {
@@ -775,7 +775,9 @@
                                         return tVal;
                                     },
                                     textStyle: {
-                                        color: "#999"
+                                        color: "rgba(255,255,255,0.5)",
+                                        fontSize:20,
+                                        fontFamily:'Helvetica'
                                     },
                                     margin:'5'
                                 },
@@ -832,7 +834,7 @@
                         ],
                         yAxis: [
                             {
-                                show:false,
+                                // show:false,
                                 min: minY1,
                                 max: maxY1,
                                 interval: split1,
@@ -852,6 +854,7 @@
                                     }
                                 },
                                 axisLabel: {
+                                    show:false,
                                     formatter: function (value, index) {
                                         if (index == 3) {
                                             return "";
@@ -860,6 +863,8 @@
                                         }
                                     },
                                     textStyle: {
+                                        fontSize:20,
+                                        fontFamily:"Helvetica",
                                         color: function (value, index) {
                                             if (parseFloat(value) > 0) {
                                                 return colorList[0];
@@ -870,7 +875,7 @@
                                     }
                                 },
                                 axisPointer: {
-                                    show:false,
+                                    // show:false,
                                     label: {
                                         formatter: function (params, value, s) {
                                             return parseFloat(params.value).toFixed(2) + "%";
@@ -906,13 +911,16 @@
                                         }
                                     },
                                     textStyle: {
-                                        color: function (value, index) {
-                                            if (parseFloat(value) > parseFloat(yc)) {
-                                                return colorList[0];
-                                            } else {
-                                                return colorList[1];
-                                            }
-                                        }
+                                        color: "rgba(255,255,255,0.5)",
+                                        fontSize:20,
+                                        fontFamily:'Helvetica',
+                                        // color: function (value, index) {
+                                        //     if (parseFloat(value) > parseFloat(yc)) {
+                                        //         return colorList[0];
+                                        //     } else {
+                                        //         return colorList[1];
+                                        //     }
+                                        // }
                                     }
                                 },
                                 axisPointer: {
@@ -957,8 +965,9 @@
                                     lineStyle: {
                                         normal: {
                                             type: 'dashed',
-                                            color: 'rgba(255,255,255,0.8)',
-                                            width:1
+                                            color: '#fff',
+                                            width:0,
+                                            opacity:0.5
                                         }
                                     },
                                     label: {
@@ -1016,12 +1025,14 @@
                                     lineStyle: {
                                         normal: {
                                             type: 'dashed',
-                                            color: 'rgba(255,255,255,0.8)',
-                                            width:1
+                                            color: '#fff',
+                                            width:1,
+                                            opacity:0.5
                                         }
                                     },
                                     label: {
                                         normal: {
+                                            // show:false,
                                             position: "end",
                                             formatter: function (params) {
                                                 return params.value + " ";
@@ -1031,7 +1042,7 @@
                                     data: [
                                         {
                                             name: 'Y 轴值为 100 的水平线',
-                                            yAxis: middleY
+                                            yAxis: middleY,
                                         },
                                         // [
                                         //     {
@@ -1165,6 +1176,14 @@
                         $(".mline_tooltip").hide();
                         mouseHoverPoint = 0;
                     });
+                    
+                    $(".point_label").show();
+                    $(".point_label").text(price[price.length-1]);
+                    var pixel = myChart.convertToPixel({seriesIndex: 1}, [$this.v_data[price.length-1], ''+price[price.length-1]]);
+                    $(".point_label").css({'top':pixel[1]-12});
+                    if(price[price.length-1] >= yc){
+                        $(".point_label").css({"background-color":"#c23a39"});
+                    }
 
                     function toolContentPosition(event) {
                         var offsetX = event.offsetX;
@@ -1349,11 +1368,8 @@
                     end: 100
                 });    
             }
-
-
         }
     };
-
 
     // 接收到清盘指令重绘图表
     function redrawChart(data,$this){
@@ -1364,6 +1380,9 @@
         $this.flag_data = []; //成交量颜色记录 1为绿 -1为红
         $this.v_data = [];
         $this.c_data = [];
+        $this.open_data = [];
+        $this.high_data = [];
+        $this.low_data = [];
         var decimal = $this.decimal;
         if(data){
             if(myChart == undefined) return;
@@ -1393,13 +1412,13 @@
             var option ={
                 yAxis: [
                     {
-                        min: minY,
-                        max: maxY,
-                        interval: split
-                    },{
                         min: minY1,
                         max: maxY1,
                         interval: split1
+                    },{
+                        min: minY,
+                        max: maxY,
+                        interval: split
                     }
                 ],
                 xAxis:[{
@@ -1408,6 +1427,9 @@
                     data:v_data
                 }],
                 series: [
+                    {
+                        data: []
+                    },
                     {
                         data: [],
                         markLine: {
@@ -1419,9 +1441,6 @@
                             ],
                             symbol: ['none', 'none']
                         }
-                    },
-                    {
-                        data: []
                     },
                     {
                         data: []
@@ -1534,4 +1553,9 @@
         var xml = new InitXMLIChart(options);
         return xml.initXML();
     };
+
+    $(window).on('resize',function(){
+        myChart.resize({width:"auto",height:"auto"});
+    })
+
 })(jQuery);
