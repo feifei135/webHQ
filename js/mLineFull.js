@@ -1565,7 +1565,9 @@
     // ecahrts图进行缩放
     $(window).resize(function(){
         if($("#kline").css("display")=="none"){
-            myChart.resize({width:"auto",height:"auto"});
+            if(myChart){
+                myChart.resize({width:"auto",height:"auto"});
+            }
         }else{
             chartResize();
         }         

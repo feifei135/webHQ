@@ -51,162 +51,167 @@
                 </ul>
             </div>
         </div>
-        
-        <!-- 分时图 -->
-        <div class="mline" id="MLine">
-            <div id="mline_charts" class="mline_full" style="width:100%;height:730px;">
-                暂无数据
-                <!-- 提示框 -->
-            </div>
-            <div class="mline_tooltip">
-                <span>
-                    <label>Open</label>
-                    <i id="open">-</i>
-                </span>
-                <span>
-                    <label>High</label>
-                    <i id="high">-</i>
-                </span>
-                <span>
-                    <label>Low</label>
-                    <i id="low">-</i>
-                </span>
-                <span>
-                    <label>Close</label>
-                    <i id="close">-</i>
-                </span>
-                <span>
-                    <label>Volume</label>
-                    <i id="volume">-</i>
-                </span>
-                <span>
-                    <label>% Change</label>
-                    <i id="change">-</i>
-                </span>
-            </div>
-            <label class="point_label">13.38</label>
-            <!-- /* 浮层信息框 */ -->
-            <!-- <div class="mline_info">
-                <span class="stockDate">06/20/2017</span>
-                <span>
-                    <label class="stockName">平安银行</label>
-                    <i class="lastPrice">21,1000</i>
-                </span>
-                <span class="arrow"></span>
-            </div> -->
-        </div>
-
-        <!--K线图开始-->
-        <div class="canvas kline fl f-kline" id="kline" style="display: none;">
-            <div class="no-data no-data-k" id="withoutData">亲，暂时没有数据哦~~~~ ^_^</div>
-            <!-- echarts图开始 -->
-            <div class="kline-charts-container">
-                <div id="f_kline_charts" class="f-kline-charts">
-                    <span id="markNewPoint">444</span>
+        <div class="chart_area">
+            <!-- 分时图 -->
+            <div class="mline" id="MLine">
+                <div id="mline_charts" class="mline_full" style="width:100%;height:730px;">
+                    暂无数据
+                    <!-- 提示框 -->
                 </div>
-                <div id="kline_tooltip" class="f-kline-info">
-                    <ul class="list-unstyled">
-                        <!-- <li><span class="name"></span></li> -->
-                        <!-- <li class="text-justify"><span class="date"></span><span class="day"></span><span class="time"></span></li> -->
-                        <li>Open<span class="open fr"></span></li>
-                        <li>High<span class="highest fr"></span></li>
-                        <li>Low<span class="lowest fr"></span></li>
-                        <li>Close<span class="price fr"></span></li>
-                        <li>Volume<span class="volume fr"></span></li>
-                        <li>% Change<span class="z-value fr"></span></li>
+                <div class="mline_tooltip">
+                    <span>
+                        <label>Open</label>
+                        <i id="open">-</i>
+                    </span>
+                    <span>
+                        <label>High</label>
+                        <i id="high">-</i>
+                    </span>
+                    <span>
+                        <label>Low</label>
+                        <i id="low">-</i>
+                    </span>
+                    <span>
+                        <label>Close</label>
+                        <i id="close">-</i>
+                    </span>
+                    <span>
+                        <label>Volume</label>
+                        <i id="volume">-</i>
+                    </span>
+                    <span>
+                        <label>% Change</label>
+                        <i id="change">-</i>
+                    </span>
+                </div>
+                <label class="point_label">13.38</label>
+                <!-- /* 浮层信息框 */ -->
+                <!-- <div class="mline_info">
+                    <span class="stockDate">06/20/2017</span>
+                    <span>
+                        <label class="stockName">平安银行</label>
+                        <i class="lastPrice">21,1000</i>
+                    </span>
+                    <span class="arrow"></span>
+                </div> -->
+            </div>
+
+            <!--K线图开始-->
+            <div class="canvas kline fl f-kline" id="kline" style="display: none;">
+                <div class="no-data no-data-k" id="withoutData">亲，暂时没有数据哦~~~~ ^_^</div>
+                <!-- echarts图开始 -->
+                <div class="kline-charts-container">
+                    <div id="f_kline_charts" class="f-kline-charts">
+                        <span id="markNewPoint">444</span>
+                    </div>
+                    <div id="kline_tooltip" class="f-kline-info">
+                        <ul class="list-unstyled">
+                            <!-- <li><span class="name"></span></li> -->
+                            <!-- <li class="text-justify"><span class="date"></span><span class="day"></span><span class="time"></span></li> -->
+                            <li>Open<span class="open fr"></span></li>
+                            <li>High<span class="highest fr"></span></li>
+                            <li>Low<span class="lowest fr"></span></li>
+                            <li>Close<span class="price fr"></span></li>
+                            <li>Volume<span class="volume fr"></span></li>
+                            <li>% Change<span class="z-value fr"></span></li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- echarts图结束 -->
+            </div>
+            <!--K线图结束-->
+            <!-- 右侧信息框开始 -->
+            <div class="fr f-stockInfo">
+                <!-- <div class="no-data no-data-k" id="withoutStockData"></div> -->
+                <div class="f-tb-fieldName">
+                    <div class="tb-fn-title f-tbfn-title">-</div>
+                    <div class="tb-fn-num f-tbfn-num">
+                        <span>-</span>
+                        <span>-</span>
+                        <span>-</span>
+                    </div>
+                </div>
+                <ul class="tb-fielList f-tb-fielList">
+                    <li>
+                        <p>最高：</p>
+                        <span class="red">-</span>
+                    </li>
+                    <li>
+                        <p>今开：</p>
+                        <span class="green">-</span>
+                    </li>
+                    <li>
+                        <p>最低：</p>
+                        <span class="green">-</span>
+                    </li>
+                    <li>
+                        <p>昨收：</p>
+                        <span>-</span>
+                    </li>
+
+                    <li>
+                        <p>成交额：</p>
+                        <span>-</span>
+                    </li>
+                    <li>
+                        <p>市盈率：</p>
+                        <span>-</span>
+                    </li>
+                    <li>
+                        <p>成交量：</p>
+                        <span>-</span>
+                    </li>
+                    <li>
+                        <p>市&nbsp;&nbsp;&nbsp;&nbsp;值：</p>
+                        <span>-</span>
+                    </li>
+                    <li>
+                        <p>换手率：</p>
+                        <span>-</span>
+                    </li>
+                    <li>
+                        <p>振&nbsp;&nbsp;&nbsp;&nbsp;幅：</p>
+                        <span>-</span>
+                    </li>
+                </ul>
+                <div class="f-latest-stock">
+                    <h2>最近访问股</h2>
+                    <ul class="f-ls-list">
+                        <li>
+                            <span>新华传媒</span>
+                            <span>6.04</span>
+                            <span class="black">0.00%</span>
+                        </li>
+                        <li>
+                            <span>新华传媒</span>
+                            <span>6.04</span>
+                            <span class="red">0.00%</span>
+                        </li>
+                        <li>
+                            <span>新华传媒</span>
+                            <span>6.04</span>
+                            <span class="green">0.00%</span>
+                        </li>
+                        <li>
+                            <span>新华传媒</span>
+                            <span>6.04</span>
+                            <span class="black">0.00%</span>
+                        </li>
+                        <li>
+                            <span>新华传媒</span>
+                            <span>6.04</span>
+                            <span class="black">0.00%</span>
+                        </li>
                     </ul>
                 </div>
             </div>
-            <!-- echarts图结束 -->
+            <!-- 右侧信息框结束 -->
         </div>
-        <!--K线图结束-->
-        <!-- 右侧信息框开始 -->
-        <div class="fr f-stockInfo">
-            <!-- <div class="no-data no-data-k" id="withoutStockData"></div> -->
-            <div class="f-tb-fieldName">
-                <div class="tb-fn-title f-tbfn-title">-</div>
-                <div class="tb-fn-num f-tbfn-num">
-                    <span>-</span>
-                    <span>-</span>
-                    <span>-</span>
-                </div>
-            </div>
-            <ul class="tb-fielList f-tb-fielList">
-                <li>
-                    <p>最高：</p>
-                    <span class="red">-</span>
-                </li>
-                <li>
-                    <p>今开：</p>
-                    <span class="green">-</span>
-                </li>
-                <li>
-                    <p>最低：</p>
-                    <span class="green">-</span>
-                </li>
-                <li>
-                    <p>昨收：</p>
-                    <span>-</span>
-                </li>
-
-                <li>
-                    <p>成交额：</p>
-                    <span>-</span>
-                </li>
-                <li>
-                    <p>市盈率：</p>
-                    <span>-</span>
-                </li>
-                <li>
-                    <p>成交量：</p>
-                    <span>-</span>
-                </li>
-                <li>
-                    <p>市&nbsp;&nbsp;&nbsp;&nbsp;值：</p>
-                    <span>-</span>
-                </li>
-                <li>
-                    <p>换手率：</p>
-                    <span>-</span>
-                </li>
-                <li>
-                    <p>振&nbsp;&nbsp;&nbsp;&nbsp;幅：</p>
-                    <span>-</span>
-                </li>
-            </ul>
-            <div class="f-latest-stock">
-                <h2>最近访问股</h2>
-                <ul class="f-ls-list">
-                    <li>
-                        <span>新华传媒</span>
-                        <span>6.04</span>
-                        <span class="black">0.00%</span>
-                    </li>
-                    <li>
-                        <span>新华传媒</span>
-                        <span>6.04</span>
-                        <span class="red">0.00%</span>
-                    </li>
-                    <li>
-                        <span>新华传媒</span>
-                        <span>6.04</span>
-                        <span class="green">0.00%</span>
-                    </li>
-                    <li>
-                        <span>新华传媒</span>
-                        <span>6.04</span>
-                        <span class="black">0.00%</span>
-                    </li>
-                    <li>
-                        <span>新华传媒</span>
-                        <span>6.04</span>
-                        <span class="black">0.00%</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-        <!-- 右侧信息框结束 -->
-
+        <footer class="bottom">
+            <span class="b_info"><em>澳元/美元  </em><i>0.7575</i><i><i class="b_arrow"></i>0.52%</i> </span>
+            <span class="b_info"><em>澳元/美元  </em><i>0.7575</i><i><i class="b_arrow"></i>0.52%</i> </span>
+            <span class="b_info"><em>澳元/美元  </em><i>0.7575</i><i><i class="b_arrow"></i>0.52%</i> </span>
+        </footer>
     </div>
 
 
