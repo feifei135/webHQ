@@ -1131,8 +1131,10 @@ function chartPaint(isHistory){
                         normal: {
                             color: '#c23a39',
                             color0: '#44c96e',
+                            colorD: 'rgba(255,255,255,0.5)',
                             borderColor: '#c23a39',
-                            borderColor0: '#44c96e'
+                            borderColor0: '#44c96e',
+                            borderColorD: 'rgba(255,255,255,0.5)'
                         }
                     },
                     barWidth: 8,
@@ -1223,7 +1225,7 @@ function updatePointLabel(value,index){
 
     var openValue = KLineSocket.HistoryData.hValuesList[KLineSocket.HistoryData.hCategoryList.length-1][0];
     var lastValue = KLineSocket.HistoryData.hValuesList[KLineSocket.HistoryData.hCategoryList.length-1][1];
-    var Bgcolor = lastValue>=openValue?"#c23a39":"#44c96e";
+    var Bgcolor = lastValue>openValue?"#c23a39":(lastValue==openValue?"#62646f":"#44c96e");
     $("#markNewPoint").css({top:pixel[1]-12,marginRight: (100-$("#markNewPoint").width())/2,backgroundColor:Bgcolor})
         .text(floatFixedDecimal(lastValue));
 }
