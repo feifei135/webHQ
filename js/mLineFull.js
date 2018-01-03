@@ -1239,7 +1239,7 @@
 
     }
 
-    $(document).keyup(function (e) {
+    $("#kline,#MLine").keyup(function (e) {
         var keyCode = e.keyCode;
         switch (keyCode) {
             case 37:

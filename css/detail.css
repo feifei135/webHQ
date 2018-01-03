@@ -590,6 +590,7 @@ ul{
 	width: 154px;
 	border: none;
 	border: 1px solid #1e2131;
+	box-sizing: border-box;
 }
 .f-lineType-box li:last-child{
 	border-top: none;
@@ -645,7 +646,7 @@ ul{
 	width: 360px;
 	top: 54px;
 	left: 0;
-	max-height: 281px;
+	max-height: 276px;
 	overflow-y: scroll;
 	display: none;
 }
@@ -680,6 +681,9 @@ ul{
 	white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+#url_list li span i{
+	font-size: 24px;
 }
 #url_list li i{
 	font-style: normal;
