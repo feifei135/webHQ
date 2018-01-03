@@ -991,3 +991,35 @@ ul{
 	border-radius: 3px;
 	right: 0;
 }
+.bottom{
+	border-top: 1px solid #264378;
+	line-height: 80px;
+	height: 80px;
+	position: fixed;
+	bottom: 0;
+	width: 100%;
+}
+.b_info{
+	width: 33%;
+	text-align: center;
+	display: inline-block;
+}
+.b_info>em,.b_info>i{
+	font-size: 30px;
+	font-family: '微软雅黑';
+	color: #fff;
+	margin: 0 15px;
+}
+.b_info>i{
+	color: #C23A39;
+}
+.b_arrow{
+	width: 0;
+	height: 0;
+	border-top: 10px solid #C23A39;
+	border-left: 10px dashed transparent;
+	border-right: 10px dashed transparent;
+	padding-top: 3px;
+	display: inline-block;
+	margin-right: 10px;
+}
