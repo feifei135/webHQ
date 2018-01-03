@@ -49079,11 +49079,13 @@ var CandlestickSeries = SeriesModel.extend({
             normal: {
                 color: '#c23531', // 阳线 positive
                 color0: '#314656', // 阴线 negative     '#c23531', '#314656'
+                colorD: '#000',
                 borderWidth: 1,
                 // FIXME
                 // ec2中使用的是lineStyle.color 和 lineStyle.color0
                 borderColor: '#c23531',
-                borderColor0: '#314656'
+                borderColor0: '#314656',
+                borderColorD: '#000'
             },
             emphasis: {
                 borderWidth: 2
@@ -49173,8 +49175,10 @@ var preprocessor = function (option) {
 
 var positiveBorderColorQuery = ['itemStyle', 'normal', 'borderColor'];
 var negativeBorderColorQuery = ['itemStyle', 'normal', 'borderColor0'];
+var defaultBorderColor = ['itemStyle', 'normal', 'borderColorD'];
 var positiveColorQuery = ['itemStyle', 'normal', 'color'];
 var negativeColorQuery = ['itemStyle', 'normal', 'color0'];
+var defaultColor = ['itemStyle', 'normal', 'colorD'];
 
 var candlestickVisual = function (ecModel, api) {
 
@@ -49191,15 +49195,16 @@ var candlestickVisual = function (ecModel, api) {
             data.each(function (idx) {
                 var itemModel = data.getItemModel(idx);
                 var sign = data.getItemLayout(idx).sign;
-
+                var open = itemModel.option[1];
+                var close = itemModel.option[2];
                 data.setItemVisual(
                     idx,
                     {
                         color: itemModel.get(
-                            sign > 0 ? positiveColorQuery : negativeColorQuery
+                            (open==close) ? defaultColor : ( sign > 0 ? positiveColorQuery : negativeColorQuery)
                         ),
                         borderColor: itemModel.get(
-                            sign > 0 ? positiveBorderColorQuery : negativeBorderColorQuery
+                            (open==close) ? defaultBorderColor : ( sign > 0 ? positiveBorderColorQuery : negativeBorderColorQuery)
                         )
                     }
                 );
