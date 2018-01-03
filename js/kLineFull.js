@@ -417,6 +417,7 @@ function reqStockInfo(options){
         dataType: 'xml',
         async:false,
         cache:false,
+        timeout:60000,
         error: function(xml){
             console.log("请求代码表出错");
         },

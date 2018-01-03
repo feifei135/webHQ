@@ -949,14 +949,12 @@ ul{
 	background-color:#44c96e;
 	color: #fff;
 	font-size: 20px;
-	padding: 3px 5px;
+	padding: 0px 10px;
 	border-radius: 3px;
 	position: absolute;
 	right: 0;
 	top:0;	
-	/* bottom: 53px; */
 	display: none;
-	/* top: 25px; */
 }
 #f_kline_charts div:last-child:not(:empty){
 	margin-top: -145px;
@@ -998,6 +996,7 @@ ul{
 	position: fixed;
 	bottom: 0;
 	width: 100%;
+	background-color: #1e2131;
 }
 .b_info{
 	width: 33%;

@@ -33,7 +33,7 @@
                     <span class="fl-trangle flb-tragle"></span>
                     <span class="fl-trangle flb-tragle2"></span>
                     <ul class="flb-toggle">
-                        <li class="active">
+                        <li>
                             <img src="../img/线形.png">
                             <span class="fl-text">Line</span>
                         </li>
@@ -108,12 +108,24 @@
                         <ul class="list-unstyled">
                             <!-- <li><span class="name"></span></li> -->
                             <!-- <li class="text-justify"><span class="date"></span><span class="day"></span><span class="time"></span></li> -->
-                            <li>Open<span class="open fr"></span></li>
-                            <li>High<span class="highest fr"></span></li>
-                            <li>Low<span class="lowest fr"></span></li>
-                            <li>Close<span class="price fr"></span></li>
-                            <li>Volume<span class="volume fr"></span></li>
-                            <li>% Change<span class="z-value fr"></span></li>
+                            <li>Open
+                                <span class="open fr"></span>
+                            </li>
+                            <li>High
+                                <span class="highest fr"></span>
+                            </li>
+                            <li>Low
+                                <span class="lowest fr"></span>
+                            </li>
+                            <li>Close
+                                <span class="price fr"></span>
+                            </li>
+                            <li>Volume
+                                <span class="volume fr"></span>
+                            </li>
+                            <li>% Change
+                                <span class="z-value fr"></span>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -208,9 +220,24 @@
             <!-- 右侧信息框结束 -->
         </div>
         <footer class="bottom">
-            <span class="b_info"><em>澳元/美元  </em><i>0.7575</i><i><i class="b_arrow"></i>0.52%</i> </span>
-            <span class="b_info"><em>澳元/美元  </em><i>0.7575</i><i><i class="b_arrow"></i>0.52%</i> </span>
-            <span class="b_info"><em>澳元/美元  </em><i>0.7575</i><i><i class="b_arrow"></i>0.52%</i> </span>
+            <span class="b_info">
+                <em>澳元/美元 </em>
+                <i>0.7575</i>
+                <i>
+                    <i class="b_arrow"></i>0.52%</i>
+            </span>
+            <span class="b_info">
+                <em>澳元/美元 </em>
+                <i>0.7575</i>
+                <i>
+                    <i class="b_arrow"></i>0.52%</i>
+            </span>
+            <span class="b_info">
+                <em>澳元/美元 </em>
+                <i>0.7575</i>
+                <i>
+                    <i class="b_arrow"></i>0.52%</i>
+            </span>
         </footer>
     </div>
 
@@ -218,18 +245,20 @@
     <script src="../js/jquery.js"></script>
     <script src="../js/echarts.js"></script>
     <script src="../js/moment.min.js"></script>
-    <script src="../js/public.js"></script> <!-- 公共方法 -->
+    <script src="../js/public.js"></script>
+    <!-- 公共方法 -->
 
     <!-- 分时图  -->
     <script src="../js/mLineFull.js"></script>
     <script src="../js/mousewheel.js"></script>
 
-    <script type="text/javascript" src="../js/kLineFull.js"></script> <!-- K线 -->
-    
+    <script type="text/javascript" src="../js/kLineFull.js"></script>
+    <!-- K线 -->
+
     <script type="text/javascript">
 
-        $(function(){
-			// 行情echarts切换标签
+        $(function () {
+            // 行情echarts切换标签
             $(".container").toggleLi(
                 {
                     data: [
@@ -259,13 +288,13 @@
                 case "2":
                     // 深交所接口
                     wsUrl = "ws://103.66.33.67:443";
-                    stockXMlUrl = "http://172.17.20.203:6789/2";
+                    stockXMlUrl = "http://103.66.33.125/2:80";
                     break;
                 case "101": ;
                 default:
                     // 上证指数接口
                     wsUrl = "ws://172.17.20.203:7681";
-                    stockXMlUrl = "http://172.17.20.203:6789/101";
+                    stockXMlUrl = "http://103.66.33.125/101:80";
                     break;
             }
 
@@ -300,7 +329,7 @@
                 thumb: ".bar-thumb"
             });
 
-        }); 
+        });
 
 
         /*
@@ -462,30 +491,9 @@
                     var location = window.location.href.split("?")[0];
                     window.location.href = location + "?id=" + id + "&exchangeID=" + exchangeID;
                 }
-
             };
 
         })(jQuery);
-
-        /*
-         * 分时图的下拉选择 线还是区域
-         */
-        $(".f-lineType").click(function () {
-
-            if ($(".f-lineType-box").hasClass("clicked")) {
-                $(".f-lineType-box").removeClass("clicked");
-                $(".f-lineType-box").hide();
-            } else {
-                $(".f-lineType-box").addClass("clicked")
-                $(".f-lineType-box").show();
-            }
-        });
-        $(".flb-toggle").on("click", "li", function () {
-            var html = "<span class=\"fl-trangle\"></span>";
-            html = $(this).html() + html;
-            $(".flt-text").html(html);
-            // $(this).parent().toggle();
-        });
     </script>
 </body>
 
