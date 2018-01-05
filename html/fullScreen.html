@@ -4,7 +4,6 @@
 <head>
     <meta charset="utf-8">
     <title>FullScreen</title>
-    <!-- <link rel="stylesheet" type="text/css" href="../css/echarts.css" /> -->
     <link rel="stylesheet" type="text/css" href="../css/detail.css">
 </head>
 
@@ -285,15 +284,13 @@
                 case "2":
                     // 深交所接口
                     wsUrl = "ws://103.66.33.67:443";
-                    // stockXMlUrl = "http://103.66.33.125/2:80";
                     break;
-                case "101": ;
-                default:
+                    case "101": ;
+                    default:
                     // 上证指数接口
                     wsUrl = "ws://172.17.20.203:7681";
-                    // stockXMlUrl = "http://103.66.33.58:443/GetCalcCodes";
                     break;
-            }
+                }
 
             // 初始化K线图
             $.queryKLine({
