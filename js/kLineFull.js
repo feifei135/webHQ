@@ -61,11 +61,15 @@ var lastClose=0;
                         KLineSocket.getKQXKZQAll();
                         // 发起新请求
                         KLineSocket.getHistoryKQAll();
+                        KLineSocket.KChart.clear();
+                        $("#withoutData").show().siblings().hide();
                         break;
                     case "day":
                         KLineSocket.getKQXQAll();
                         // 发起新请求
                         KLineSocket.getHistoryKQAll();
+                        KLineSocket.KChart.clear();
+                        $("#withoutData").show().siblings().hide();
                         break;
                     default:;
                 };

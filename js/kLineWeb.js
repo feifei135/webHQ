@@ -60,11 +60,17 @@ var lastClose=0;
                         break;
                     case "minute":
                         KLineSocket.getKQXKZQAll();
+
+                        KLineSocket.KChart.clear();
+                        $("#withoutData").show().siblings().hide();
                         // 发起新请求
                         KLineSocket.getHistoryKQAll();
                         break;
                     case "day":
                         KLineSocket.getKQXQAll();
+                        
+                        KLineSocket.KChart.clear();
+                        $("#withoutData").show().siblings().hide();
                         // 发起新请求
                         KLineSocket.getHistoryKQAll();
                         break;
@@ -578,7 +584,7 @@ function setStockInfo(_codeList,id){
     // 所属市场代码
     var fieldInsCode = $(this).parent().parent().attr("code");
 
-    $(".tb-fn-title").text(StockSocket.FieldInfo.Name+"("+StockSocket.FieldInfo.Code+"."+fieldInsCode+")");
+    $(".tb-fn-title").text(StockSocket.FieldInfo.Name+"("+StockSocket.FieldInfo.Code+(fieldInsCode==undefined?"":"."+fieldInsCode)+")");
 };
 // 查询十大流通股和公司信息
 function requireCom(reqComOpt,code){
