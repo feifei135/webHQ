@@ -61,14 +61,12 @@ var lastClose=0;
                         KLineSocket.getKQXKZQAll();
                         // 发起新请求
                         KLineSocket.getHistoryKQAll();
-                        KLineSocket.KChart.clear();
                         $("#withoutData").show().siblings().hide();
                         break;
                     case "day":
                         KLineSocket.getKQXQAll();
                         // 发起新请求
                         KLineSocket.getHistoryKQAll();
-                        KLineSocket.KChart.clear();
                         $("#withoutData").show().siblings().hide();
                         break;
                     default:;
@@ -489,15 +487,15 @@ WebSocketConnect.prototype.__proto__ = {
 var initSocketEvent = function(socket, klineType){
 
     socket.ws.onclose = function () {
-                    console.log("终端重连……");
+                    // console.log("终端重连……");
                     socket.reconnect(); //终端重连
                 },
     socket.ws.onerror = function () {
-                    console.log("报错重连……");
+                    // console.log("报错重连……");
                     socket.reconnect(); //报错重连
                 },
     socket.ws.onopen = function () {
-                    console.log("open");
+                    // console.log("open");
                     //心跳检测重置
                     socket.reset().start();                 // 第一次建立连接则启动心跳包
 
@@ -698,12 +696,14 @@ function setFieldInfo(data){
 };
 // 代码表：获取 指数/个股 名称，小数位数，InstrumentCode，Code
 function setStockInfo(_codeList,id){
-    var codeInfo = _codeList.CodeInfo[0];
-    StockSocket.FieldInfo.Name = codeInfo.InstrumentName;
-    StockSocket.FieldInfo.Decimal = codeInfo.PriceDecimal;
-    // 股票代码
-    StockSocket.FieldInfo.Code = codeInfo.InstrumentCode;
-    $(".tb-fn-title").html("<span class=\"fl\">"+StockSocket.FieldInfo.Name+"</span><span class=\"fl\">"+StockSocket.FieldInfo.Code+"</span>");
+    if(_codeList.ReturnCode == 0){
+        var codeInfo = _codeList.CodeInfo[0];
+        StockSocket.FieldInfo.Name = codeInfo.InstrumentName;
+        StockSocket.FieldInfo.Decimal = codeInfo.PriceDecimal;
+        // 股票代码
+        StockSocket.FieldInfo.Code = codeInfo.InstrumentCode;
+        $(".tb-fn-title").html("<span class=\"fl\">"+StockSocket.FieldInfo.Name+"</span><span class=\"fl\">"+StockSocket.FieldInfo.Code+"</span>");
+    }
 };
 
 /*
