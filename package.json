@@ -1,0 +1,22 @@
+{
+  "name": "wenhq",
+  "version": "1.0.0",
+  "description": "web 行情\r 指数、个股\r 分时图、日K、分钟K",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/feifei135/webHQ.git"
+  },
+  "author": "zhangff",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/feifei135/webHQ/issues"
+  },
+  "homepage": "https://github.com/feifei135/webHQ#readme",
+  "devDependencies": {
+    "requirejs": "^2.3.5"
+  }
+}

@@ -4,8 +4,11 @@ var exponentDateTime = [];//解析XML后得到的数组 所有指数的时间、
 var elementId;
 var ZSId,ExchangeID;
 var LSData = ZCData = DYData = QPDATA = null;
+var obj;
 
-$(function(){
+// $(function(){
+function initPage(m){
+    obj = m;
     $("#main1").initMline(
         {
             id:"1",
@@ -29,7 +32,8 @@ $(function(){
     $("body").on("click",function(e){
         $("#searchEnd").slideUp();
     });
-});
+}
+// });
 ;(function($,window,document,undefined){
     $.fn.initMline = function(options,params){
         var socket = null;
@@ -658,8 +662,8 @@ $(function(){
                 beginTime1 = todayDate + " " + $this.oneZSInfo[1].startTime1;
                 finishTime1 = todayDate + " " + $this.oneZSInfo[1].endTime1;
                 
-                b_time1 = moment(finishTime).utc().valueOf();
-                b_time2 = moment(beginTime1).utc().valueOf();
+                b_time1 = obj.moment(finishTime).utc().valueOf();
+                b_time2 = obj.moment(beginTime1).utc().valueOf();
             }else{
                 beginTime = todayDate + " " + $this.oneZSInfo[0].startTime;
                 finishTime = todayDate + " " + $this.oneZSInfo[0].endTime;
