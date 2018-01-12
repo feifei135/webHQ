@@ -7,21 +7,6 @@
     var sub = 0;
     var colorList = ['#c23a39','#44c96e','#555','#999','#e5e5e5'];//红色,绿色,555,999
     var start = 0,zoom = 10;//左右键时应用
-    var _singleTime,_endTime,_dealDate,_timeFlag;//股票更新的最后时间，交易时间的最后节点，交易日期，变量
-
-    function watchStock($this){//集合竞价
-        if(!myChart)return;
-        var timer = setInterval(function(){
-            if(_timeFlag >= _endTime){
-                clearInterval(timer);
-                return;
-            }
-            var data = [{'Time':_timeFlag,'Date':_dealDate,'High':null,'Low':null,'Price':null,'Open':null}];
-            initCharts(data,'add',$this);
-            _timeFlag = parseInt(_singleTime) + 100;
-        },30000);//30秒运行一次   监测是否有推送数据过来
-    }
-
     var WebSocketConnect = function(opt) {
         this.ws = null;
         this.defaults = {
@@ -165,12 +150,16 @@
             },
             success: function(data){
                 if(data.ReturnCode == 0){
-                    data = data.CodeInfo[0];
-                    compareTime(data,_options);
-    
-                    socket = new WebSocketConnect(_options);
-                    var ws = socket.createWebSocket();
-                    initEvent(ws,_this);
+                    if(data && data.CodeInfo[0]){
+                        data = data.CodeInfo[0];
+                        compareTime(data,_options);
+        
+                        socket = new WebSocketConnect(_options);
+                        var ws = socket.createWebSocket();
+                        initEvent(ws,_this);
+                    }else{
+                        console.log("没有数据");
+                    }
                 }
                 // var allZSCode =  $(xml).find("EXCHANGE PRODUCT SECURITY");
                 // var exponentDateTime = getExponentDateTime(xml,allZSCode);
@@ -257,6 +246,7 @@
     }
     //1、用id判断出是哪个指数，获取其开始时间和结束时间、保留小数位、股票名字
     function compareTime(data,_options){
+        if(!data.time) return;
         var startTime,endTime,startTime1,endTime1;
         if(data.time.indexOf(";")>-1){//分段时间
             startTime = (data.time.split(";")[0]).split("-")[0];
@@ -300,10 +290,8 @@
                 _options.nowDateTime.push(json1);
             }
         }
-        _endTime = (endTime1?endTime1:endTime).replace(":","");
     }
     function initEvent(ws,_this){
-        watchStock(_this);        
         var $this = _this;
         ws.onclose = function () {
             socket.reconnect(); //终端重连
@@ -353,10 +341,8 @@
                     // todayDate = formatDate(data[0].Date + sub);
                 break;
                 case "Q213"://订阅分钟线
-                    clearInterval(timer);
                     if(myChart != undefined){
                         initCharts(data,"add",$this);
-                        watchStock($this);
                     }
                 break;
                 case "Q640"://清盘
@@ -401,10 +387,8 @@
             var limitDown = (yc - yc*0.1).toFixed($this.decimal);
             if(type == "add"){
                 if(myChart != undefined){
-                    
                     var a_lastData = data;
                     var last_dataTime = formatTime(a_lastData[0].Time);//行情最新时间
-                    _singleTime = a_lastData[0].Time;
                     var last_date = dateToStamp(formatDate(a_lastData[0].Date) +" " + last_dataTime);//最新时间时间戳
                     var zVale = parseFloat(((parseFloat(a_lastData[0].Price) - parseFloat(yc)) / parseFloat(yc) * 100).toFixed(2)); //行情最新涨跌幅
                     var aValue = parseFloat(a_lastData[0].Volume); //最新成交量
@@ -575,8 +559,6 @@
                     if(fvalue >= yc){
                         $(".point_label").css({"background-color":"#c23a39"});
                     }
-
-                    _dealDate = a_lastData[0].Date;
                 }else{
                     // $("#noData").show();
                     // $("#toolContent_M").hide();
@@ -596,8 +578,9 @@
                     var lowPrice = [];//最低价
                     var flag = [];//现价-开盘价 值为1和-1
                     $this.v_data = getxAxis(data[0].Date,$this);
+                    // var lastDate = moment(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)).utc().valueOf();
                     var lastDate = dateToStamp(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time));
-                    
+
                     for(var i=0;i<$this.c_data.length;i++){
                         if(lastDate < $this.c_data[i]){
                             break;
@@ -678,11 +661,9 @@
                     var split = parseFloat(((maxY - minY) / 6).toFixed(4));
                     var split1 = parseFloat(((maxY1 - minY1) / 6).toFixed(4));
 
-                    _dealDate = data[data.length-1].Date;
-                    _singleTime = data[data.length-1].Time;
-
                     // 绘制图表 配置参数
                     var option = {
+                        backgroundColor: "#1e2131",
                         animation: false,
                         grid: [
                             {
@@ -715,8 +696,8 @@
                             enterable:false,
                             transitionDuration:0,
                             formatter:function(params){
-                                var str = '<p>'+params[0].axisValueLabel+'</p>'+
-                                '<p style="font-size:24px;margin-top: 10px;color: #fff;">'+$this.stockName+(params[1].value?params[1].value:"-")+'</i></p>';
+                                var str = '<p style="font-size:20px;color:rgba(255,255,255,0.5);text-align:left;">'+((params[0].axisValueLabel).split(" ")[0]).replace(/-/g,"/")+'</p>'+
+                                '<p style="font-size:24px;margin-top: 10px;color: #fff;text-align:left;">'+$this.stockName+(params[1].value?params[1].value:"-")+'</i></p>';
                                 return str;
                             },
                             backgroundColor:"#1e2131",
@@ -732,7 +713,7 @@
                             axisPointer: {
                                 type:'cross',
                                 crossStyle:{
-                                    color:'rgba(255,255,255,0.5)',
+                                    color:'rgba(255,255,255,0.5);',
                                 }
                             },
                         },
@@ -1134,7 +1115,8 @@
                                             }else{
                                                 return colorList[1];
                                             }
-                                        }
+                                        },
+                                        opacity: 0.8,
                                     }
                                 }
                             }
@@ -1181,17 +1163,24 @@
                     $("#mline_charts").bind("mouseenter", function (event) {
                         toolContentPosition(event);
                         $(".mline_tooltip").show();
+
+                        _this = $("#MLine");
                     });
 
                     $("#mline_charts").bind("mousemove", function (event) {
                         isHoverGraph = true;
                         toolContentPosition(event);
+
+                         _this = $("#MLine");
                     });
 
                     $("#mline_charts").bind("mouseout", function (event) {
                         isHoverGraph = false;
                         $(".mline_tooltip").hide();
                         mouseHoverPoint = 0;
+
+                        $(_this).children(".charts-focus").blur();
+                        _this = window;
                     });
                     
                     $(".point_label").show();
@@ -1247,8 +1236,14 @@
         }
 
     }
-
+     $("#MLine,#kline").mouseover(function(){
+        $(this).children(".kline-focus").focus();
+    });
+    $("#MLine,#kline").mouseout(function(){
+        $(this).children(".kline-focus").blur();
+    });
     $("#kline,#MLine").keyup(function (e) {
+        $(window).off("scroll");
         var keyCode = e.keyCode;
         switch (keyCode) {
             case 37:
