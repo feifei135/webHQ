@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<title>行情详情</title>
     <link rel="stylesheet" type="text/css" href="../css/echarts.css" />
-    <link rel="stylesheet" type="text/css" href="../css/detail.css">
+    <link rel="stylesheet" type="text/css" href="../css/detail.css" />
 </head>
 <body>
      <!-- 页面开始 -->
@@ -225,13 +225,15 @@
                     ]
                 }
             );
-            $(".chartsTab").chartsTab();
+            $(".chartsTab").chartsTab({
+                
+            });
 
             //指数与个股区分
             var url = location.href;
             var id, exchangeID, wsUrl, stockXMlUrl;
             if(url.indexOf("?")>-1){
-                id = getQueryString("id");//main.js里的getQueryString
+                id = getQueryString("id");
                 exchangeID = getQueryString("exchangeID");
             }else{
                 id = "1";
@@ -242,7 +244,7 @@
             switch (exchangeID) {
                 case "2":
                     // 深交所接口
-                    wsUrl = "ws://103.66.33.67:443";
+                    wsUrl = "ws://103.66.33.67:80";
                     // stockXMlUrl = "http://103.66.33.125/2:80";
                     break;
                 case "101": ;

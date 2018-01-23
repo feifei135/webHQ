@@ -209,12 +209,15 @@ function setUnit(data,type,lang){
         var $li;
         $.each(opt.data,function(i,item){
             $li = $("<li></li>");
-            $li.css({"width":opt.width,"height":opt.lineHeight,"line-height":opt.lineHeight,"border-bottom":opt.borderB,"float":"left"});
+            $li.css({"width":opt.width,"height":opt.lineHeight,"line-height":opt.lineHeight,"border-bottom":opt.borderB,"float":"left","cursor":"pointer"});
             if(i==0){
                 $li.addClass("active");
             }
             if(item.id){
                 $li.attr({"id":item.id});
+            }
+            if(item.SectionID){
+                $li.attr({"data-sectionID":item.SectionID});
             }
             $li.text(item.name);
             $($el).append($li);
@@ -253,7 +256,7 @@ function setUnit(data,type,lang){
         $this.append(opts);
     };
 
-    $.fn.chartsTab.defaults = {
-        data:["无","量比","MACD"]
+    $.fn.chartsTab.defaults = {//,"量比","MACD"
+        data:["无"]
     };
 })(jQuery, window, document);

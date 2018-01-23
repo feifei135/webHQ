@@ -4,36 +4,35 @@ var exponentDateTime = [];//解析XML后得到的数组 所有指数的时间、
 var elementId;
 var ZSId,ExchangeID;
 var LSData = ZCData = DYData = QPDATA = null;
-var obj;
+var $;
 
-// $(function(){
-function initPage(m){
-    obj = m;
-    $("#main1").initMline(
-        {
-            id:"1",
-            exchangeID:"2"
-        }
-    );
-    $("#main2").initMline(
-        {
-            id:"2",
-            exchangeID:"2"
-        }
-    );
-    $("#main3").initMline(
-        {
-            id:"4",
-            exchangeID:"2"
-        }
-    );
+$(function(){
+    // function initPage(){
+        $("#main1").initMline(
+            {
+                id:"1",
+                exchangeID:"2"
+            }
+        );
+        $("#main2").initMline(
+            {
+                id:"2",
+                exchangeID:"2"
+            }
+        );
+        $("#main3").initMline(
+            {
+                id:"4",
+                exchangeID:"2"
+            }
+        );
 
-    // 点击其他地方收回搜索下拉列表
-    $("body").on("click",function(e){
-        $("#searchEnd").slideUp();
-    });
-}
-// });
+        // 点击其他地方收回搜索下拉列表
+        $("body").on("click",function(e){
+            $("#searchEnd").slideUp();
+        });
+    // }
+});
 ;(function($,window,document,undefined){
     $.fn.initMline = function(options,params){
         var socket = null;
@@ -662,8 +661,8 @@ function initPage(m){
                 beginTime1 = todayDate + " " + $this.oneZSInfo[1].startTime1;
                 finishTime1 = todayDate + " " + $this.oneZSInfo[1].endTime1;
                 
-                b_time1 = obj.moment(finishTime).utc().valueOf();
-                b_time2 = obj.moment(beginTime1).utc().valueOf();
+                b_time1 = moment(finishTime).utc().valueOf();
+                b_time2 = moment(beginTime1).utc().valueOf();
             }else{
                 beginTime = todayDate + " " + $this.oneZSInfo[0].startTime;
                 finishTime = todayDate + " " + $this.oneZSInfo[0].endTime;
@@ -852,7 +851,7 @@ function initPage(m){
             }, timeout);
         };
     };
-})(jQuery, window, document);
+});
 // 点击切换处理
 function tabLi(index){
     console.log(index);

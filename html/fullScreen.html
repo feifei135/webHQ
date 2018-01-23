@@ -52,51 +52,51 @@
         </div>
         <div class="chart_area">
             <!-- 分时图 -->
-            <div class="mline" id="MLine">
-                <input type="text" class="charts-focus" readonly="readonly" unselectable="on" style="outline: none; position: absolute;z-index: -1;top: 30%;left: 30%;background-color: inherit;border: none;opacity:0;filter:alpha(opacity=0);color:transparent;">
-                <div id="mline_charts" class="mline_full" style="width:100%;height:730px;">
-                    暂无数据
-                    <!-- 提示框 -->
+            <div id="MLine" class="clearfix">
+                <div class="mline" >
+                    <input type="text" class="charts-focus" readonly="readonly" unselectable="on" style="outline: none; position: absolute;z-index: -1;top: 30%;left: 30%;background-color: inherit;border: none;opacity:0;filter:alpha(opacity=0);color:transparent;">
+                    <div id="mline_charts" class="mline_full" style="width:100%;height:730px;">
+                        暂无数据
+                    </div>
+                    
+                    <!-- 固定提示框 -->
+                    <div class="mline_tooltip">
+                        <span>
+                            <label>Open</label>
+                            <i id="open">-</i>
+                        </span>
+                        <span>
+                            <label>High</label>
+                            <i id="high">-</i>
+                        </span>
+                        <span>
+                            <label>Low</label>
+                            <i id="low">-</i>
+                        </span>
+                        <span>
+                            <label>Close</label>
+                            <i id="close">-</i>
+                        </span>
+                        <span>
+                            <label>Volume</label>
+                            <i id="volume">-</i>
+                        </span>
+                        <span>
+                            <label>% Change</label>
+                            <i id="change">-</i>
+                        </span>
+                    </div>
+                    <label class="point_label">13.38</label>
                 </div>
-                
-                <div class="mline_tooltip">
+                <!-- 随鼠标走的提示框 -->
+                <div class="mline_info">
+                    <span class="stockDate">-</span>
                     <span>
-                        <label>Open</label>
-                        <i id="open">-</i>
-                    </span>
-                    <span>
-                        <label>High</label>
-                        <i id="high">-</i>
-                    </span>
-                    <span>
-                        <label>Low</label>
-                        <i id="low">-</i>
-                    </span>
-                    <span>
-                        <label>Close</label>
-                        <i id="close">-</i>
-                    </span>
-                    <span>
-                        <label>Volume</label>
-                        <i id="volume">-</i>
-                    </span>
-                    <span>
-                        <label>% Change</label>
-                        <i id="change">-</i>
+                        <label class="stockName">-</label>
+                        <i class="lastPrice">-</i>
                     </span>
                 </div>
-                <label class="point_label">13.38</label>
-                <!-- /* 浮层信息框 */ -->
-                <!-- <div class="mline_info">
-                    <span class="stockDate">06/20/2017</span>
-                    <span>
-                        <label class="stockName">平安银行</label>
-                        <i class="lastPrice">21,1000</i>
-                    </span>
-                    <span class="arrow"></span>
-                </div> -->
             </div>
-
             <!--K线图开始-->
             <div class="canvas kline fl f-kline" id="kline" style="display: none;">
                 <div class="no-data no-data-k" id="withoutData">亲，暂时没有数据哦~~~~ ^_^</div>
@@ -276,7 +276,7 @@
             var url = location.href;
             var id, exchangeID, wsUrl, stockXMlUrl;
             if (url.indexOf("?") > -1) {
-                id = getQueryString("id");//main.js里的getQueryString
+                id = getQueryString("id");
                 exchangeID = getQueryString("exchangeID");
             } else {
                 id = "1";
@@ -287,7 +287,7 @@
             switch (exchangeID) {
                 case "2":
                     // 深交所接口
-                    wsUrl = "ws://103.66.33.67:443";
+                    wsUrl = "ws://103.66.33.67:80";
                     break;
                     case "101": ;
                     default:

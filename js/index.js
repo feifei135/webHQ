@@ -1,43 +1,35 @@
 require.config({
     baseUrl: "../js/lib",
     paths: {
-        "jquery": "jquery",
-        'moment':'moment.min',
-        "public":'../public',
-        "marketCenter":'../marketCenter',
+        jquery: 'jquery',
+        public:'../public',
+        marketCenter:'../marketCenter',
     },
     shim: {
-        'jquery':{
-            exports:['$','jQuery']
+        jquery:{
+            exports:'$'
         },
         'jquery.pagination': {
             deps: ['jquery'],
             exports: 'jQuery.fn.pagination'
         },
-        'echarts':{
-            exports:'echarts'
-        },
-        'moment':{
-            init:function(){
-                return {
-                    moment : moment,
-                }
-            }
+        echarts:{
+            exports:'echarts',
+            deps:[]
         },
         public:{
-            deps: ['jquery'],
-            // init:function(){
-            //     return {
-            //         formatDate : formatDate,
-            //         formatTime : formatTime
-            //     }
-            // }
+            deps: ['jquery']
         },
         marketCenter:{
-            deps:['jquery','public','moment'],
+            deps:['jquery','public','echarts']
         }
     }
 });
-require(['moment','public','marketCenter'],function(m){
-    initPage(m);
-});
+var scripts = document.getElementsByTagName("script");
+for(var i=0;i<scripts.length;i++){
+    var module = scripts[i].getAttribute("require-module");
+    if(module != undefined && module != ""){
+        require([module],null);
+        break;
+    }
+}

@@ -911,13 +911,13 @@ ul{
 	box-shadow: 0 0 3px rgba(0, 0, 0, 0.35);
 	border:1px solid #264378;
 	border-radius: 3px;
-	padding: 10px 20px;
+	padding: 5px 10px;
 	display: inline-block;
 	position: absolute;
 	top: 0;
 	left: 0;
 	background-color:#1e2131;
-	/* display: none; */
+	display: none;
 }
 .mline_info>span{
 	font-family: Helvetica,Arial,sans-serif;

@@ -7,12 +7,26 @@
     var sub = 0;
     var colorList = ['#c23a39','#44c96e','#555','#999','#e5e5e5'];//红色,绿色,555,999
     var start = 0,zoom = 10;//左右键时应用
+
+    var timer;//定时器
+
+    var _singleTime,_endTime,_dealDate,_timeFlag;//股票更新的最后时间，交易时间的最后节点，交易日期，变量
+    function watchStock($this){//集合竞价
+        if(!myChart)return;
+        timer = setInterval(function(){
+            if(_timeFlag >= _endTime){
+                clearInterval(timer);
+                return;
+            }
+            var data = [{'Time':_timeFlag,'Date':_dealDate,'High':null,'Low':null,'Price':null,'Open':null}];
+            initCharts(data,'add',$this);
+        },30000);//30秒运行一次   监测是否有推送数据过来
+    }
+
     var WebSocketConnect = function(opt) {
         this.ws = null;
         this.defaults = {
-            //wsUrl : 'ws://103.66.33.37:80'; //生产
             wsUrl : opt.wsUrl,//"ws://172.17.20.203:7681",  //开发
-            // wsUrl : "ws://103.66.33.67:443",  //开发       
             lockReconnect : false,//避免重复连接 连接锁如果有正在连接的则锁住
             timeout : 60000,//60秒
             timeoutObj : null,
@@ -99,15 +113,15 @@
             flag_data : [], //成交量颜色记录 1为红 -1为绿
             //订阅快照请求
             HQAll : {
-                "MsgType":"S101",
-                "DesscriptionType":"3",
+                "MsgType":"S1010",
+                // "DesscriptionType":"3",
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
-                "Instrumenttype":"2"
+                "Instrumenttype":"1"
             },
             // 获取历史数据
             historyData : {
-                "MsgType": "C213",
+                "MsgType": "Q3011",
                 "ExchangeID": opt.exchangeID,
                 "InstrumentID": opt.id,
                 "StartIndex": "0",
@@ -117,19 +131,19 @@
             },
             // 实时推送数据
             RTDATA : {
-                "MsgType":"S101",
-                "DesscriptionType":"3",
+                "MsgType":"S1010",
+                // "DesscriptionType":"3",
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
-                "Instrumenttype":"5"
+                "Instrumenttype":"11"
             },
             // 清盘
             QPDATA : {
-                "MsgType":"S101",
-                "DesscriptionType":"3",
+                "MsgType":"Q8002",
+                // "DesscriptionType":"3",
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
-                "Instrumenttype":"4"
+                "PructType":"0"
             }
         };
         this.options = $.extend({},this.defaults,opt);
@@ -290,8 +304,10 @@
                 _options.nowDateTime.push(json1);
             }
         }
+        _endTime = (endTime1?endTime1:endTime).replace(":","");
     }
     function initEvent(ws,_this){
+        watchStock(_this);
         var $this = _this;
         ws.onclose = function () {
             socket.reconnect(); //终端重连
@@ -326,26 +342,27 @@
             // 2.2、动态添加今日的数据 
             switch(MsgType)
             {
-                case "R213"://订阅历史数据
-                    // $(document).trigger("MK_data",data);
+                case "R3011"://订阅历史数据
                     initCharts(data,'',$this);
                     break;
-                case "Q619"://订阅快照
+                case "P0001"://订阅快照
                     // $(document).trigger("SBR_HQ",data);
                     if(!yc){
-                        yc = data[0].PreClose; //获取昨收值
+                        yc = data.PreClose; //获取昨收值
                         return;
                     }
 
                     // 接口变更  日期为前一天
                     // todayDate = formatDate(data[0].Date + sub);
                 break;
-                case "Q213"://订阅分钟线
+                case "P0011"://订阅分钟线
+                    clearInterval(timer);
                     if(myChart != undefined){
                         initCharts(data,"add",$this);
+                        watchStock($this);
                     }
                 break;
-                case "Q640"://清盘
+                case "R8002"://清盘
                     var MarketStatus = data["MarketStatus"] || data[0]["MarketStatus"];
                     if(MarketStatus == 1){//收到清盘指令  操作图表
                         redrawChart(data,$this);
@@ -388,25 +405,27 @@
             if(type == "add"){
                 if(myChart != undefined){
                     var a_lastData = data;
-                    var last_dataTime = formatTime(a_lastData[0].Time);//行情最新时间
-                    var last_date = dateToStamp(formatDate(a_lastData[0].Date) +" " + last_dataTime);//最新时间时间戳
-                    var zVale = parseFloat(((parseFloat(a_lastData[0].Price) - parseFloat(yc)) / parseFloat(yc) * 100).toFixed(2)); //行情最新涨跌幅
-                    var aValue = parseFloat(a_lastData[0].Volume); //最新成交量
-                    var oValue = parseFloat(a_lastData[0].Open); //最新开盘价
-                    var hValue = parseFloat(a_lastData[0].High); //最高价
-                    var lValue = parseFloat(a_lastData[0].Low); //最低价
+                    var last_dataTime = formatTime(a_lastData.Time);//行情最新时间
+                    _singleTime = a_lastData.Time;
+                    _timeFlag = parseInt(_singleTime) + 100;
+                    var last_date = dateToStamp(formatDate(a_lastData.Date) +" " + last_dataTime);//最新时间时间戳
+                    var zVale = parseFloat(((parseFloat(a_lastData.Price) - parseFloat(yc)) / parseFloat(yc) * 100).toFixed(2)); //行情最新涨跌幅
+                    var aValue = parseFloat(a_lastData.Volume); //最新成交量
+                    var oValue = parseFloat(a_lastData.Open); //最新开盘价
+                    var hValue = parseFloat(a_lastData.High); //最高价
+                    var lValue = parseFloat(a_lastData.Low); //最低价
 
-                    var flag = parseFloat(a_lastData[0].Price) - parseFloat(a_lastData[0].Open) >= 0 ? 1:-1;//成交量最新颜色标识
+                    var flag = parseFloat(a_lastData.Price) - parseFloat(a_lastData.Open) >= 0 ? 1:-1;//成交量最新颜色标识
 
-                    if((parseFloat(a_lastData[0].Price)) >= limitUp){
-                        a_lastData[0].Price = limitUp;
-                    }else if((parseFloat(a_lastData[0].Price)) <= limitDown){
-                        a_lastData[0].Price = limitDown;
+                    if((parseFloat(a_lastData.Price)) >= limitUp){
+                        a_lastData.Price = limitUp;
+                    }else if((parseFloat(a_lastData.Price)) <= limitDown){
+                        a_lastData.Price = limitDown;
                     }
 
                     for(var i=0;i<$this.c_data.length;i++){
                         if(last_date == $this.c_data[i]){
-                            $this.history_data[i] = parseFloat(a_lastData[0].Price);
+                            $this.history_data[i] = parseFloat(a_lastData.Price);
                             $this.z_history_data[i] = zVale;
                             $this.a_history_data[i] = aValue;
                             $this.open_data[i] = oValue;
@@ -424,7 +443,7 @@
                                     $this.high_data[j].push(null);
                                     $this.low_data[j].push(null);
                                     if(j == i){
-                                        $this.history_data[j] = parseFloat(a_lastData[0].Price);
+                                        $this.history_data[j] = parseFloat(a_lastData.Price);
                                         $this.z_history_data[j] = zVale;
                                         $this.a_history_data[j] = aValue;
                                         $this.flag_data[j] = flag;
@@ -448,7 +467,7 @@
                     ];
                     // set_marketTool(marktToolData,$this); //设置动态行情条
                     var fvalue, r1;
-                    fvalue = parseFloat(a_lastData[0].Price);
+                    fvalue = parseFloat(a_lastData.Price);
                     r1 = Math.abs(fvalue - parseFloat(yc));
                     if (r1 > $this.interval) {
                         $this.interval = r1 + r1*0.1;
@@ -559,6 +578,7 @@
                     if(fvalue >= yc){
                         $(".point_label").css({"background-color":"#c23a39"});
                     }
+                    _dealDate = a_lastData.Date;
                 }else{
                     // $("#noData").show();
                     // $("#toolContent_M").hide();
@@ -568,8 +588,8 @@
                     // $("#MLine").hide();
                 }
             }else{
-                if(data.d && data.d.length>0){
-                    data = data.d;
+                if(data.KLineSeriesInfo && data.KLineSeriesInfo.length>0){
+                    data = data.KLineSeriesInfo;
                     var price = [];//价格
                     var volume = [];//成交量
                     var zdfData = [];//涨跌幅
@@ -578,7 +598,6 @@
                     var lowPrice = [];//最低价
                     var flag = [];//现价-开盘价 值为1和-1
                     $this.v_data = getxAxis(data[0].Date,$this);
-                    // var lastDate = moment(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)).utc().valueOf();
                     var lastDate = dateToStamp(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time));
 
                     for(var i=0;i<$this.c_data.length;i++){
@@ -586,7 +605,6 @@
                             break;
                         }
                         for(var j=0;j<data.length;j++){
-                            // var dateStamp = moment(formatDate(data[j].Date) +" "+formatTime(data[j].Time)).utc().valueOf();
                             var dateStamp = dateToStamp(formatDate(data[j].Date) +" "+formatTime(data[j].Time));
                             if($this.c_data[i] == dateStamp){
                                 var fvalue = parseFloat(data[j].Price);//价格
@@ -661,6 +679,10 @@
                     var split = parseFloat(((maxY - minY) / 6).toFixed(4));
                     var split1 = parseFloat(((maxY1 - minY1) / 6).toFixed(4));
 
+                    _dealDate = data[data.length-1].Date;
+                    _singleTime = data[data.length-1].Time;
+                    _timeFlag = parseInt(_singleTime) + 100;
+
                     // 绘制图表 配置参数
                     var option = {
                         backgroundColor: "#1e2131",
@@ -692,30 +714,32 @@
                             snap:true
                         },
                         tooltip: {
+                            // show:false,
                             trigger: 'axis',
-                            enterable:false,
-                            transitionDuration:0,
-                            formatter:function(params){
-                                var str = '<p style="font-size:20px;color:rgba(255,255,255,0.5);text-align:left;">'+((params[0].axisValueLabel).split(" ")[0]).replace(/-/g,"/")+'</p>'+
-                                '<p style="font-size:24px;margin-top: 10px;color: #fff;text-align:left;">'+$this.stockName+(params[1].value?params[1].value:"-")+'</i></p>';
-                                return str;
-                            },
-                            backgroundColor:"#1e2131",
-                            borderColor:"#264378",
-                            borderWidth:1,
-                            padding:[10,20],
-                            textStyle:{
-                                fontFamily:'Helvetice',
-                                lineHeight:30,
-                                fontSize:20
-                            },
-                            extraCssText: 'box-shadow: 0 0 7px rgba(0, 0, 0, 0.35);',
-                            axisPointer: {
-                                type:'cross',
-                                crossStyle:{
-                                    color:'rgba(255,255,255,0.5);',
-                                }
-                            },
+                            showContent:false
+                            // enterable:false,
+                            // transitionDuration:0,
+                            // formatter:function(params){
+                            //     var str = '<p style="font-size:20px;color:rgba(255,255,255,0.5);text-align:left;">'+((params[0].axisValueLabel).split(" ")[0]).replace(/-/g,"/")+'</p>'+
+                            //     '<p style="font-size:24px;margin-top: 10px;color: #fff;text-align:left;">'+$this.stockName+(params[1].value?params[1].value:"-")+'</i></p>';
+                            //     return str;
+                            // },
+                            // backgroundColor:"#1e2131",
+                            // borderColor:"#264378",
+                            // borderWidth:1,
+                            // padding:[10,20],
+                            // textStyle:{
+                            //     fontFamily:'Helvetice',
+                            //     lineHeight:30,
+                            //     fontSize:20
+                            // },
+                            // extraCssText: 'box-shadow: 0 0 7px rgba(0, 0, 0, 0.35);',
+                            // axisPointer: {
+                            //     type:'cross',
+                            //     crossStyle:{
+                            //         color:'rgba(255,255,255,0.5);',
+                            //     }
+                            // },
                         },
                         dataZoom: [
                             {
@@ -1138,9 +1162,18 @@
                         lowPrice[count - 1]
                     ];
                     // set_marketTool(marktToolData,$this); //设置动态行情条
-
+                    var topPixel = 0;
                     myChart.on('showTip', function (params) {
                         mouseHoverPoint = params.dataIndex;
+                        // 随鼠标移动的浮层
+                        var pixel = myChart.convertToPixel({seriesIndex: 1}, [$this.v_data[mouseHoverPoint], ''+price[mouseHoverPoint]]);
+                        if(topPixel == pixel[1]-150){
+                            return;
+                        }
+                        $(".mline_info").css({"top":pixel[1],"left":pixel[0]-70});
+                        topPixel = pixel[1]-150;
+                        var tooltipTime = $this.v_data[mouseHoverPoint].split(" ")[0];
+                            tooltipTime = tooltipTime.replace(/-/g,"/");
                         if ($this.history_data[mouseHoverPoint]) {
                             var tooltipHtml = '<span><label>Open</label><i>'+openPrice[mouseHoverPoint]+'</i></span>'+
                             '<span><label>High</label><i>'+highPrice[mouseHoverPoint]+'</i></span><span>'+
@@ -1149,6 +1182,10 @@
                             '<label>Volume</label><i>'+volume[mouseHoverPoint]+'</i></span><span>'+
                             '<label>% Change</label><i>'+zdfData[mouseHoverPoint]+'%</i></span>';
                             $(".mline_tooltip").html(tooltipHtml);
+
+                            $(".mline_info").html(' <span class="stockDate">'+tooltipTime+'</span>'+
+                            '<span><label class="stockName">'+$this.stockName+'</label>'+
+                                '<i class="lastPrice">  '+price[mouseHoverPoint]+'</i></span>');
                         } else {
                             var tooltipHtml = '<span><label>Open</label><i>-</i></span>'+
                             '<span><label>High</label><i>-</i></span><span>'+
@@ -1157,42 +1194,54 @@
                             '<label>Volume</label><i>-</i></span><span>'+
                             '<label>% Change</label><i>-</i></span>';
                             $(".mline_tooltip").html(tooltipHtml);
+                            $(".mline_info").html(' <span class="stockDate">'+tooltipTime+'</span>'+
+                            '<span><label class="stockName">'+$this.stockName+'</label>'+
+                                '<i class="lastPrice">-</i></span>');
                         }
                     });
 
-                    $("#mline_charts").bind("mouseenter", function (event) {
+                    $("#MLine").bind("mouseenter", function (event) {
                         toolContentPosition(event);
-                        $(".mline_tooltip").show();
-
                         _this = $("#MLine");
+                        $(".mline_tooltip").show();
+                        $(".mline_info").show();
                     });
 
-                    $("#mline_charts").bind("mousemove", function (event) {
+                    $("#MLine").bind("mousemove", function (event) {
                         isHoverGraph = true;
                         toolContentPosition(event);
-
                          _this = $("#MLine");
                     });
 
-                    $("#mline_charts").bind("mouseout", function (event) {
+                    $("#MLine").bind("mouseout", function (event) {
                         isHoverGraph = false;
-                        $(".mline_tooltip").hide();
                         mouseHoverPoint = 0;
-
                         $(_this).children(".charts-focus").blur();
                         _this = window;
+                        $(".mline_tooltip").hide();
+                        $(".mline_info").hide();
+                        topPixel = 0;
                     });
-                    
+
+                    // Y轴的label
                     $(".point_label").show();
                     $(".point_label").text(price[price.length-1]);
-                    var pixel = myChart.convertToPixel({seriesIndex: 1}, [$this.v_data[price.length-1], ''+price[price.length-1]]);
-                    $(".point_label").css({'top':pixel[1]-12});
+                    var pixelLast = myChart.convertToPixel({seriesIndex: 1}, [$this.v_data[price.length-1], ''+price[price.length-1]]);
+                    $(".point_label").css({'top':pixelLast[1]-12});
                     if(price[price.length-1] >= yc){
                         $(".point_label").css({"background-color":"#c23a39"});
                     }
 
                     function toolContentPosition(event) {
                         var offsetX = event.offsetX;
+                        if(offsetX > pixelLast[0]) {
+                            $(".mline_tooltip").hide();
+                            $(".mline_info").hide();
+                            topPixel = 0;
+                            return;
+                        }
+                        $(".mline_tooltip").show();
+                        $(".mline_info").show();
                         var continerWidth = $("#mline_charts").width(), toolContent = $(".mline_tooltip").width();
                         var centerX = continerWidth / 2;
                         if (offsetX > centerX) {
