@@ -125,9 +125,10 @@ i,em{
 .cb-title p{
 	display: inline-block;
 	width: 50%;
-	font-size: 14px;
+	font-size: 13px;
 	padding-bottom: 6px;
 	vertical-align: top;
+	letter-spacing: -0.5px;
 }
 .cb-title p:last-child{
 	text-align: right;
@@ -137,7 +138,7 @@ i,em{
 }
 .cb-right ul span{
 	display: inline-block;
-	font-size: 14px;
+	font-size: 13px;
 	line-height: 30px;
 }
 .cb-pk{
@@ -169,6 +170,7 @@ i,em{
 }
 .cb-cj ul{
 	border: none;
+	overflow: hidden;
 }
 .cb-cj h2{
 	margin-top: 0;
@@ -451,6 +453,7 @@ ul{
 	top: 57.5%;
 	top: 77%;
 	height: 9%;
+	z-index: 999;
 }
 .volMacd{
 	top: 68%;
@@ -1021,4 +1024,19 @@ ul{
 	padding-top: 3px;
 	display: inline-block;
 	margin-right: 10px;
+}
+.cb-pk .cb-zs-pk span:first-child,
+.cb-pk .cb-zs-pk span:nth-child(2){
+	width: 50%
+}
+.cb-pk .cb-zs-pk{
+	border-bottom: 1px solid #e5e5e5;
+}
+.loading{
+	position: absolute;
+    top: 40px;
+    z-index: 1;
+    left: 0;
+    margin: auto;
+    right: 0;
 }

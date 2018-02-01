@@ -1,6 +1,4 @@
-var KLineSocket,StockSocket;
-var barMaxValue;
-var lastClose=0;
+var KLineSocket;
 var _this;
 $(document).keydown(function(e){
     if(_this!=undefined&&($(_this).attr("id")=="MLine"||$(_this).attr("id")=="kline")){
@@ -8,104 +6,79 @@ $(document).keydown(function(e){
         return;
     }
 });
+
 ;(function($){
     // websocket通道-查询K线
     $.queryKLine = function(option) {
         
         // 实例化websocket默认参数 
         KLineSocket = new WebSocketConnect(option);
-        KLineSocket.KChart = echarts.init(document.getElementById('kline_charts')); // K线绘制对象;
-
         // 建立websocket连接，命名为ws
         KLineSocket.ws = KLineSocket.createWebSocket();
-        // 点击按钮查询K线
-        KLineSocket.turnOn = true;
-        // 区分点击的按钮是否是当前按钮
-        var lineShow = "mline";
+
+        // 点击查询周期K线
         $("#tab li").on("click",function(){
-            
-            // K线类型
+
+            // 点击的K线类型
             var klineType = $(this).attr("id");
 
-            if(lineShow==klineType){
-                return;
+            // 判断当前查询的是否是上一次查询的类型
+            if(KLineSocket.option){
+                if(KLineSocket.HistoryData.preLineType == klineType){
+                    return;
+                }
             }
 
-            lineShow = klineType;
-
-            // 创建新的查询对象
+            // 创建新的查询对象参数-存储的都是实时改变的参数
             var KLrequireObj = new KLineRequire(option, klineType);
-            KLineSocket.option = KLrequireObj.options;
-            KLineSocket.HistoryData = KLrequireObj.HistoryData;
-            KLineSocket.KLineSet = KLrequireObj.KLineSet;
+            // 把请求参数赋值给已经开启的websocket参数
+            KLineSocket.option = $.extend({},KLineSocket.option,KLrequireObj.options);
             // 发起websocket请求
-            initSocketEvent(KLineSocket, klineType);
+            initSocketEvent(KLineSocket);
+
+
+            // 显示没有数据
+            $("#withoutData").show().siblings().hide();
             
 
-            if(klineType=="mline"&&KLineSocket.turnOn){
-                return;
-            }else{
-                lastClose = 0;
-                KLineSocket.turnOn = false;
-                // 取消之前的订阅
-                switch(klineType){
-                    case "mline":
-                        var KCharts =  KLineSocket.KChart.getOption();
-                        if(KCharts){
-                            KLineSocket.KChart.setOption({
-                                // xAxis: [{data: null},{data: null},{data: null}],
-                                // yAxis: [{data: null},{data: null},{data: null}],
-                                // series: [{data: null},{data: null},{data: null}]
-                                xAxis: [{data: null},{data: null}],
-                                yAxis: [{data: null},{data: null}],
-                                series: [{data: null},{data: null}]
-                            });
-                        }
-                        $("#withoutData").show().siblings().hide();
-                        KLineSocket.getKQXQAll();
-                        KLineSocket.getKQXKZQAll();
-                        break;
-                    case "minute":
-                        KLineSocket.getKQXKZQAll();
-                        $("#withoutData").show().siblings().hide();
-                        // 发起新请求
-                        KLineSocket.getHistoryKQAll();
-                        break;
-                    case "day":
-                        KLineSocket.getKQXQAll();
-                        $("#withoutData").show().siblings().hide();
-                        // 发起新请求
-                        KLineSocket.getHistoryKQAll();
-                        break;
-                    default:;
-                };
+            // 清空K线图
+            if(KLineSocket.KChart.getOption()){
+                KLineSocket.KChart.clear();
             }
+
+            // 取消之前的订阅,同时清空历史数据数组
+            if(KLineSocket.HistoryData.preLineType!=undefined&&KLineSocket.HistoryData.preLineType!=""){
+                KLineSocket.getKWatchCC();
+                $.each(KLineSocket.HistoryData,function(i,obj){
+                    if(typeof KLineSocket.HistoryData[i] == "string"){
+                        KLineSocket.HistoryData[i] = "";
+                    }
+                    if(obj instanceof Array){
+                        KLineSocket.HistoryData[i] = [];
+                    }
+                    if(typeof KLineSocket.HistoryData[i] == "number"){
+                        KLineSocket.HistoryData[i] = 0;
+                    }
+                });
+            }
+
+            // 刚进入页面就点击分时图，不进行提交
+            if(klineType=="mline"){
+                return;
+            }
+
+            // 请求历史数据
+            KLineSocket.getHistoryKQAll();
+
+            // 当前K线存储为前一根K线
+            KLineSocket.HistoryData.preLineType = KLineSocket.option.lineType;     
+
+            // K线前一根柱子的收盘价
+            KLineSocket.option.lastClose = 0; 
+                
         });
     };
 
-    // websocket通道-指数/个股信息
-    $.queryStockInfo = function(option){
-
-        // 实例化请求参数
-        var StockReqObj = new ReqStockInfoOpt(option);
-        // 实例化websocket默认参数 
-        StockSocket = new WebSocketConnect(StockReqObj.options);
-        StockSocket.FieldInfo = StockReqObj.FieldInfo;
-        StockSocket.turnOff = true;
-        StockSocket.ws = StockSocket.createWebSocket();
-
-        // 存储当前个股/指数信息
-        reqStockInfo(StockSocket.option);
-        // 个股需要查询企业信息，公司信息
-        var reqComOpt = ["23000171","23000138","23000164","23000188"];
-        requireCom(reqComOpt, StockSocket.FieldInfo.Code);
-        // 发起websocket请求-reqStockInfo中去写
-        // initSocketEvent(StockSocket); 
-        // 个股需要查询企业信息，公司信息
-        // var reqComOpt = ["23000171","23000138","23000164","23000188"];
-        // requireCom(reqComOpt, StockSocket.FieldInfo.Code);
-
-    };
 })(jQuery);
 function tabLi(index){
     if(index==0){
@@ -119,126 +92,154 @@ function tabLi(index){
 /*
  * websocket
  */
-// 指数/个股信息参数
-var ReqStockInfoOpt = function(option){
-    var ExchangeID = option.ExchangeID?option.ExchangeID:"101",
-        InstrumentID = option.InstrumentID?option.InstrumentID:"1",
-        wsUrl = option.wsUrl?option.wsUrl:"ws://172.17.20.203:7681",
-        stockXMlUrl = option.stockXMlUrl?option.stockXMlUrl:"http://103.66.33.58:443/GetCalcData?ExchangeID=1&Codes=1";
-    // 不同类型K线历史数据参数扩展对象
-    var historyQAll = {};
-    // 对象默认请求参数
-    this.defaults = {
-        wsUrl: wsUrl,
-        stockXMlUrl: stockXMlUrl,
-        // 订阅快照
-        KKZQAll: {              
-            InstrumentID: InstrumentID,
-            ExchangeID: ExchangeID,
-            MsgType:"S101",
-            DesscriptionType:"3",
-            Instrumenttype:"2"
-        },
-        // 盘口
-        QPK : {
-            InstrumentID: InstrumentID,
-            ExchangeID: ExchangeID,
-            MsgType: "S101",
-            DesscriptionType: "3",
-            Instrumenttype: "3"
-        },
-        // 逐笔成交
-        QZBCJ : {
-            InstrumentID: InstrumentID,
-            ExchangeID: ExchangeID,
-            MsgType: "S101",
-            DesscriptionType: "3",
-            Instrumenttype: "1"
-        }
-    };
-    // 更新请求参数
-    this.options = $.extend({}, this.defaults, option);
-    this.FieldInfo = {
-        Name: null,                 // 指数名称  ---代码表查询
-        Decimal: null,              // 小数位数
-        PrePrice: null,             // 昨收   ---今日-快照 
-        Code: null
-    };
-};
-// K线参数
+// K线请求数据参数
 var KLineRequire = function(option, klineType){
     var ExchangeID = option.ExchangeID?option.ExchangeID:"101",
         InstrumentID = option.InstrumentID?option.InstrumentID:"1",
-        wsUrl = option.wsUrl?option.wsUrl:"ws://172.17.20.203:7681",
-        stockXMlUrl = option.stockXMlUrl?option.stockXMlUrl:"http://103.66.33.58:443/GetCalcData?ExchangeID=1&Codes=1",
-        klineType = klineType?klineType:"minute";
-    // 不同类型K线历史数据参数扩展对象
-    var historyQAll = {};
+        msgType = null,
+        instrumenttype = null;
     // 对象默认请求参数
-    this.defaults = {
-        wsUrl: wsUrl,
-        stockXMlUrl: stockXMlUrl,
-        lineType: klineType,
+    this.options = {
+        lineType: klineType?klineType:null,
+        lastClose: 0,
         // 查询历史数据
         HistoryKQAll: {         
             InstrumentID: InstrumentID,
             ExchangeID: ExchangeID,
-            MsgType: "C211",  
+            MsgType: "",  
             StartIndex: "-1", 
             StartDate: "0", 
             Count: "200" 
         },
-        // 订阅分钟K线
-        KQAll: {                
+        // 订阅
+        KWatch: {                
             InstrumentID: InstrumentID,
             ExchangeID: ExchangeID,
-            MsgType:"S101",
-            DesscriptionType:"3",
-            Instrumenttype:"5"
+            MsgType:"S1010",
+            Instrumenttype:""
         },
-        // 取消订阅分钟K线
-        KQXQAll: {              
+        // 取消订阅
+        KWatchCC: {              
             InstrumentID: InstrumentID,
             ExchangeID: ExchangeID,
-            MsgType:"S101",
-            DesscriptionType:"4",
-            Instrumenttype:"5"
-        },
-        // 订阅快照
-        KKZQAll: {              
-            InstrumentID: InstrumentID,
-            ExchangeID: ExchangeID,
-            MsgType:"S101",
-            DesscriptionType:"3",
-            Instrumenttype:"2"
-        },
-        // 取消订阅快照
-        KQXKZQAll: {            
-            InstrumentID: InstrumentID,
-            ExchangeID: ExchangeID,
-            MsgType:"S101",
-            DesscriptionType:"4",
-            Instrumenttype:"2"
+            MsgType:"N1010",
+            Instrumenttype:""
         }
     };
-    // 不同类型K线请求参数区分
+
+    var objKWatch = getQueryType(klineType);
+
+    this.options.KWatch = $.extend({}, this.options.KWatch, { Instrumenttype: objKWatch.Instrumenttype });
+
+    if(klineType=="day"||klineType=="week"||klineType=="month"||klineType=="year"){
+        // 更新查询历史数据参数
+        this.options.HistoryKQAll = $.extend(
+            {}, 
+            this.options.HistoryKQAll, 
+            { MsgType: objKWatch.MsgType}
+        );
+    }else{
+        // 更新查询历史数据参数
+        this.options.HistoryKQAll = $.extend(
+            {}, 
+            this.options.HistoryKQAll, 
+            { MsgType: objKWatch.MsgType, StartTime: "0" }
+        ); 
+    } 
+
+    if(KLineSocket.HistoryData.preLineType!=undefined){
+        var objKWatchCC = getQueryType(KLineSocket.HistoryData.preLineType);
+        this.options.KWatchCC = $.extend({}, this.options.KWatchCC, { Instrumenttype: objKWatchCC.Instrumenttype });
+    }
+};
+function getQueryType(klineType){
+    var typeObj = {
+        MsgType: null,
+        Instrumenttype: null
+    }
     switch(klineType){
         case "day":
-            historyQAll = {
-                MsgType: "C211"             // 日K线：C211
+            typeObj = {         // 日K线：Q3021
+                MsgType: "Q3021",
+                Instrumenttype: "1"
+            }
+            break;
+        case "week":
+            typeObj = {         // 周K线：Q3022
+                MsgType: "Q3022",
+                // Instrumenttype: "11"
+            }
+            break;
+        case "month":
+            typeObj = {         // 月K线：Q3023
+                MsgType: "Q3023",
+                // Instrumenttype: "11"
+            }
+            break;
+        case "year":
+            typeObj = {         // 年K线：Q3025
+                MsgType: "Q3025",
+                // Instrumenttype: "11"
             }
             break;
         case "minute":
-            historyQAll = {
-                MsgType: "C213",            // 分钟K线：C213
-                StartTime: "0"
+            typeObj = {         // 1分钟K线：Q3011
+                MsgType: "Q3011",
+                Instrumenttype: "11"
             }
             break;
-        default:
+        case "fivem":
+            typeObj = {         // 5分钟K线：Q3012
+                MsgType: "Q3012",
+                Instrumenttype: "12"
+            }
+            break;
+        case "tenm":          
+            typeObj = {         // 10分钟K线：Q3013
+                MsgType: "Q3013",
+                Instrumenttype: "13"
+            }
+            break;
+        case "fifm":
+            typeObj = {         // 15分钟K线：Q3014
+                MsgType: "Q3014",
+                Instrumenttype: "14"
+            }
+            break;
+        case "thim":
+            typeObj = {         // 30分钟K线：Q3015
+                MsgType: "Q3015",
+                Instrumenttype: "15"
+            }
+            break;
+        case "hour":       
+            typeObj = {         // 60分钟K线：Q3016
+                MsgType: "Q3016",
+                Instrumenttype: "16"
+            }
+            break;
+        default:;
     };
-    // 更新请求参数
-    this.defaults.HistoryKQAll = $.extend({}, this.defaults.HistoryKQAll, historyQAll);
-    this.options = $.extend({}, this.defaults, option);
+    return typeObj;
+}
+// websocket实例化相关参数以及数据存储参数
+var WebSocketConnect = function(options){
+    this.wsUrl = options.wsUrl?options.wsUrl:"ws://103.66.33.67:80";
+    this.stockXMlUrl = options.stockXMlUrl?options.stockXMlUrl:"http://103.66.33.58:443/GetCalcData?ExchangeID=2&Codes=1";
+    this.ws = null;
+    this.lockReconnect = false;
+    this.timeout = 60000;       //60秒
+    this.timeoutObj = null;
+    this.serverTimeoutObj = null;
+    this.KChart = echarts.init(document.getElementById('kline_charts'))
+    // this.option = options;      // 将请求参数等，存储在socket中
+    // this.HistoryData = options.HistoryData?options.HistoryData:null;        // 历史数据存储，为了添加新数据时，能够准确记录所有数据
+    // 心跳包
+    this.HeartSend = {          
+        InstrumentID: options.InstrumentID,
+        ExchangeID: options.ExchangeID,
+        MsgType: "Q8050"
+    };
     this.HistoryData = {
         hDate: [],                  // 日期
         hDay: [],                   // 星期
@@ -250,7 +251,8 @@ var KLineRequire = function(option, klineType){
         hZValuesList: [],           // 涨幅
         hZValuesListPercent: [],    // 涨幅百分比
         hZf: [],                    // 振幅
-        hZfList: []                 // 振幅百分比
+        hZfList: [],                // 振幅百分比
+        preLineType: null             // 前一次查询的线类型
     };
     this.KLineSet = {
         mouseHoverPoint: 0,         // 当前现实的数据索引
@@ -258,23 +260,15 @@ var KLineRequire = function(option, klineType){
         zoom: 10,
         start: 0
     };
-};
-// websocket连接
-var WebSocketConnect = function(options){
-    this.wsUrl = options.wsUrl?options.wsUrl:"ws://172.17.20.203:7681";
-    this.stockXMlUrl = options.stockXMlUrl?options.stockXMlUrl:"http://103.66.33.58:443/GetCalcData?ExchangeID=1&Codes=1";
-    this.ws = null;
-    this.lockReconnect = false;
-    this.timeout = 60000;       //60秒
-    this.timeoutObj = null;
-    this.serverTimeoutObj = null;
-    this.option = options;      // 将请求参数等，存储在socket中
-    this.HistoryData = options.HistoryData?options.HistoryData:null;        // 历史数据存储，为了添加新数据时，能够准确记录所有数据
-    // 心跳包
-    this.HeartSend = {          
-        InstrumentID: options.InstrumentID,
-        ExchangeID: options.ExchangeID,
-        MsgType: "C646"
+    // 数据查询参数
+    this.option = {
+        KWatchKZ: {
+            InstrumentID: options.InstrumentID,
+            ExchangeID: options.ExchangeID,
+            MsgType:"S1010",
+            Instrumenttype:"1"
+        },
+        lineType: null
     };
 };
 WebSocketConnect.prototype = {
@@ -290,13 +284,12 @@ WebSocketConnect.prototype = {
                     var _target = this;
                     if (_target.lockReconnect) return;
                     _target.lockReconnect = true;
-                    StockSocket.turnOff = true;
                     //没连接上会一直重连，设置延迟避免请求过多
                     setTimeout(function () {
                         var ws = _target.createWebSocket(_target.wsUrl);
                         _target.ws = _target.createWebSocket(_target.wsUrl);
 
-                        initSocketEvent(_target, _target.option.lineType);
+                        initSocketEvent(_target);
 
                         _target.lockReconnect = false;
                         console.log("重连中……");
@@ -331,35 +324,19 @@ WebSocketConnect.prototype.__proto__ = {
                             this.request(this.option.HistoryKQAll);
                         },
     // 订阅分钟K线
-    getKQAll:           function(){
-                            this.request(this.option.KQAll);
+    getKWatch:       function(){
+                            this.request(this.option.KWatch);
                         },
     // 取消订阅分钟K线
-    getKQXQAll:         function(){
-                            this.request(this.option.KQXQAll);
-                        },
-    // 订阅快照
-    getKKZQAll:         function(){
-                            this.request(this.option.KKZQAll);
-                        },
-    // 取消订阅快照
-    getKQXKZQAll:       function(){
-                            this.request(this.option.KQXKZQAll);
-                        },
-    // 盘口
-    getQPK:             function(){
-                            this.request(this.option.QPK);
-                        },
-    // 逐笔成交
-    getQZBCJ:           function(){
-                            this.request(this.option.QZBCJ);
+    getKWatchCC:     function(){
+                            this.request(this.option.KWatchCC);
                         },
     getHeartSend:       function(){
                             this.request(this.HeartSend);
                         },
 };
 // websocket请求
-var initSocketEvent = function(socket, klineType){
+var initSocketEvent = function(socket){
 
     socket.ws.onclose = function () {
                     // console.log("终端重连……");
@@ -371,6 +348,7 @@ var initSocketEvent = function(socket, klineType){
                 },
     socket.ws.onopen = function () {
                     // console.log("open");
+                    
                     //心跳检测重置
                     socket.reset().start();                 // 第一次建立连接则启动心跳包
 
@@ -378,72 +356,60 @@ var initSocketEvent = function(socket, klineType){
                      * 个股/指数 实时数据，通过快照接口
                      * 其他数据，处理方式不同
                      */
-                    // klineType-区分查询历史数据和指数/个股信息
-                    if(klineType){
+                    // socket.option.lineType-区分查询历史数据和指数/个股信息
+                    if(socket.option.lineType&&socket.option.lineType!="mline"){
                         socket.getHistoryKQAll();
-                    }else{
-                        // 指数不存在盘口数据和成交记录
-                        if(socket.option.ExchangeID=="101"){
-                            $(".cb-right").html("<div style='font-size:18px;'>指数查询无盘口信息和成交信息哟~~~~^_^</div>");
-                        }
-                        StockSocket.getKKZQAll();
                     }
+                    
                 },
     socket.ws.onmessage = function (evt) {
-
                     // console.log("打开成功");
-
                     var jsons  = evt.data.split("|");  //每个json包结束都带有一个| 所以分割最后一个为空
                     $.each(jsons,function (i,o) {
                         if(o!==""){
                             var data = eval("(" + o + ")");
-                            var dataList = data.d?data.d:data;
+                            var dataList = data.KLineSeriesInfo?data.KLineSeriesInfo:new Array(data);
                             var MsgType =  data["MsgType"] || data[0]["MsgType"]; //暂时用他来区分推送还是历史数据 如果存在是历史数据,否则推送行情
-                            
+                            var ErrorCode = data["ErrorCode"]?data["ErrorCode"]:null;
+                            if(ErrorCode){
+                                console.info(data["Content"])
+                                return;
+                            }
                             /*
                              * 个股/指数 实时数据，通过快照接口
                              * 其他数据，处理方式不同
                              */
-                            // klineType-区分查询历史数据和指数/个股信息
+                            // socket.option.lineType-区分查询历史数据和指数/个股信息
                             switch(MsgType){
-                                case "Q617":    //五档盘口
-                                    setfillPK(data);
-                                    break;
-                                case "Q618":    //逐笔成交
-                                    setfillZBCJ(data);
-                                    break;
-                                case "Q619":       // 订阅快照
-                                    // 页面信息接口
-                                    if(!klineType){
-                                        StockSocket.FieldInfo.PrePrice = data[0].PreClose;
-                                        setFieldInfo(data[data.length-1]);
-                                        if(StockSocket.turnOff){
-                                            //请求盘口
-                                            StockSocket.getQPK();
-                                            //请求逐笔成交
-                                            StockSocket.getQZBCJ();
-                                            StockSocket.turnOff = false;
-                                        }
-                                    }
+                                case "P0001":       // 订阅日K线
                                     // K线接口
-                                    if(klineType&&klineType!="mline"){
-                                        KCharts(socket, dataList);
-                                    }else{
-                                        return;
-                                    }
+                                    KCharts(dataList);
                                     break;
-                                case "Q213":        // 订阅分钟线应答
-                                    KCharts(socket, dataList);
+                                case "P0011":        // 1分钟K线订阅分钟线应答
+                                case "P0012":        // 5分钟K线订阅分钟线应答
+                                case "P0013":        // 10分钟K线订阅分钟线应答
+                                case "P0014":        // 15分钟K线订阅分钟线应答
+                                case "P0015":        // 30分钟K线订阅分钟线应答
+                                case "P0016":        // 60分钟K线订阅分钟线应答
+                                    KCharts(dataList);
                                     break;
-                                case "R213":        // 分钟K线历史数据查询
-                                    socket.getKQAll();      // 订阅当前日期K线=分钟K线
-                                    KCharts(socket, dataList, "history");
-                                    break;
-                                case "R211":        // 日K线历史数据查询
-                                    socket.getKKZQAll();     // 订阅当前日期K线=快照
-                                    KCharts(socket, dataList, "history");
+                                case "R3011":        // 1分钟K线历史数据查询
+                                case "R3012":        // 5分钟K线历史数据查询
+                                case "R3013":        // 10分钟K线历史数据查询
+                                case "R3014":        // 15分钟K线历史数据查询
+                                case "R3015":        // 30分钟K线历史数据查询
+                                case "R3016":        // 60分钟K线历史数据查询
+                                    // socket.getKWatch();      // 订阅当前日期K线=分钟K线
+                                    // KCharts(dataList, "history");
+                                    // break;
+                                case "R3021":        // 日K线历史数据查询
+                                case "R3022":        // 周K线历史数据查询
+                                case "R3023":        // 月K线历史数据查询
+                                case "R3025":        // 年K线历史数据查询
+                                    socket.getKWatch();      // 订阅当前日期K线=分钟K线
+                                    KCharts(dataList, "history");
                                     break;    
-                                case "R646":  //心跳包
+                                case "R8050":  //心跳包
                                     // console.log(data);
                                 default:
                             }
@@ -454,392 +420,15 @@ var initSocketEvent = function(socket, klineType){
                     socket.reset().start();
                 }
 };
-/*
- * 详情页面 指数/个股 信息相关函数
- */
-// 查询 指数/个股 相关信息
-function reqStockInfo(options){
-    //第一次打开终端,初始化代码表第一次默认请求
-    $.ajax({
-        url:  options.stockXMlUrl,
-        type: 'GET',
-        dataType: 'json',
-        async:false,
-        cache:false,
-        error: function(json){
-            console.log("请求代码表出错");
-        },
-        success: function(json){
-            var allZSCode =  json;
-            //  获取交易名字和小数位数
-            setStockInfo(allZSCode,options.InstrumentID);
-            // 发起websocket请求-reqStockInfo中去写
-            initSocketEvent(StockSocket); 
-        }
-    });
-};
-// 设置顶部信息  当前指数/个股 请求快照数据
-function setFieldInfo(data){
-    var high,low,open,zf,price,zd,zdf,dealVal,dealVol;
 
-    if(data){
-        $("#withoutStockData").hide().siblings().show();
-        StockSocket.FieldInfo.PrePrice = data.PreClose;
-        high = data.High;
-        low = data.Low;
-        open = data.Open;
-        dealVal = data.Value;
-
-        dealVol = data.Volume;
-        // StockSocket.FieldInfo.fMarketRate = data.fMarketRate;
-        // StockSocket.FieldInfo.fMarketValue = data.fMarketValue;
-        // StockSocket.FieldInfo.fHSRate = data.fHSRate;
-        
-        price = data.Last;
-        // 未开盘时，昨收为0，计算涨跌幅和振幅会出现NAN，于是进行区分，为0%
-        zf = StockSocket.FieldInfo.PrePrice==0?floatFixedTwo(0):floatFixedTwo((high - low)/StockSocket.FieldInfo.PrePrice*100);
-        zd = price - StockSocket.FieldInfo.PrePrice;
-        zdf = StockSocket.FieldInfo.PrePrice==0?floatFixedTwo(0):floatFixedTwo((zd/StockSocket.FieldInfo.PrePrice)*100);
-
-        $.each($(".tb-fielList li"),function(index,obj){
-
-            var spanObj = $(obj).children("span"),
-                compareData = StockSocket.FieldInfo.PrePrice,
-                data,
-                unit;
-            switch(index){
-                case 0:
-                    data = floatFixedDecimal(high);
-                    break;
-                case 1:
-                    data = floatFixedDecimal(open);
-                    break;
-                case 2:
-                    data = setUnit(floatFixedDecimal(dealVal));
-                    compareData = false;
-                    unit = "元";
-                    break;
-                case 3:
-                    return;
-                case 4:
-                    return;
-                case 5:
-                    data = floatFixedDecimal(low);
-                    break;
-                case 6:
-                    data = floatFixedDecimal(StockSocket.FieldInfo.PrePrice);
-                    compareData = false;
-                    break;
-                case 7:
-                    if(dealVol>=100){
-                        data = setUnit(dealVol/100);
-                        unit = "手";
-                    }else{
-                        data = dealVol;
-                        unit = "股";
-                    }
-                    compareData = false;
-                    break;
-                case 8:
-                    return;
-                case 9:
-                    data = zf+"%";
-                    compareData = false;
-                    break;
-                default:;
-            }
-            setTextAndColor(spanObj, data, compareData, unit);
-            compareData = StockSocket.FieldInfo.PrePrice;
-        });
-
-        $.each($(".tb-fn-num span"),function(index,obj){
-
-            var spanObj = $(obj),
-                compareData = StockSocket.FieldInfo.PrePrice,
-                data,
-                unit;
-            switch(index){
-                case 0:
-                    data = floatFixedDecimal(price);
-                    break;
-                case 1:
-                    data = floatFixedDecimal(zd);
-                    compareData = "0";
-                    break;
-                case 2:
-                    data = zdf;
-                    compareData = "0";
-                    unit = "%";
-                    break;
-                default:;
-            }
-            setTextAndColor(spanObj, data, compareData, unit);
-            compareData = StockSocket.FieldInfo.PrePrice;
-        });
-
-    }
-};
-// 代码表：获取 指数/个股 名称，小数位数，InstrumentCode，Code
-function setStockInfo(_codeList,id){
-    if(_codeList.ReturnCode == 0){
-        var codeInfo = _codeList.CodeInfo[0];
-        StockSocket.FieldInfo.Name = codeInfo.InstrumentName;
-        StockSocket.FieldInfo.Decimal = codeInfo.PriceDecimal;
-        // 股票代码
-        StockSocket.FieldInfo.Code = codeInfo.InstrumentCode;
-        $(".tb-fn-title").text(StockSocket.FieldInfo.Name+"("+StockSocket.FieldInfo.Code+")");
-    }
-};
-// 查询十大流通股和公司信息
-function requireCom(reqComOpt,code){
-    
-    var reqUrl = "http://172.17.20.178:8080/DKService/GetService?Service=DataSourceService.Gets&ReturnType=JSON&OBJID=";
-    
-    $.each(reqComOpt, function(i,reqComObj){
-        $.ajax({
-            url:  reqUrl+reqComObj+"&P_NODE_CODE="+code,
-            type: 'GET',
-            dataType: 'json',
-            async:true,
-            cache:false,
-            error: function(data){
-                console.log("请求公司信息出错");
-            },
-            success: function(data){
-                if(data.response.data){
-                    var responseInfo = data.response.data;
-                    switch(reqComObj){
-                        case "23000188":
-                            getSDLTG(responseInfo);
-                            break;
-                        case "23000171":
-                        case "23000138":
-                        case "23000164":
-                            getCompanyInfo(responseInfo[0]);
-                            break;
-                        default:;
-                    }
-                } 
-            }
-        });
-    }); 
-};
-// 获取公司信息数据
-function getCompanyInfo(responseInfo){
-    if(responseInfo.TEL){
-        // 主营产品 23000138
-        $("#com_main_pro").text(responseInfo.MAIN_PROD);
-        // 董秘电话 
-        $("#com_tel").text(responseInfo.TEL);
-    }else{
-        if(responseInfo.TTL_SHR_LF){
-
-            responseInfo.TTL_SHR = responseInfo.TTL_SHR.replace(/,/g,"");
-            responseInfo.TTL_SHR_LF = responseInfo.TTL_SHR_LF.replace(/,/g,"");
-
-            var com_Ltg = setUnit(responseInfo.TTL_SHR);
-            var com_Fltg = setUnit(responseInfo.TTL_SHR_LF);
-            // 流通股（非限售） 23000164
-            $("#com_ttl_shrl").text(com_Ltg+"股");
-            // 总股本 
-            $("#com_ttl_shr").text(com_Fltg+"股");
-
-        }else{
-            // 注册资本 23000171
-            responseInfo.REG_CPTL = responseInfo.REG_CPTL.replace(/,/g,"");
-            var com_Zczb = setUnit(responseInfo.REG_CPTL);
-            
-            // 公司名称
-            $("#com_name").text(responseInfo.COM_NAME);
-            // 董事长
-            $("#com_psn").text(responseInfo.PSN_NAME);
-            // 总经理
-            $("#com_gm").text(responseInfo.GM);
-            // 办公地址
-            $("#com_addr").text(responseInfo.OFS_ADDR);
-            // 办公网址
-            $("#com_website").text(responseInfo.WEB_SITE);
-            // 注册资本
-            $("#com_zc").text(com_Zczb);
-            // 上市日期
-            $("#com_ss").text((responseInfo.LST_DT).split(" ")[0]);
-
-            $("#withoutComData").hide().siblings().show();
-        }
-
-    }
-};
-// 获取十大流通股数据
-function getSDLTG(responseInfo){
-    $("#withoutStcData").hide().siblings().show();
-    // 获取最新的报告期
-    var endDate = getEndDate(responseInfo);
-    // 找到最新报告期的十大流通股东
-    var comList = getComList(responseInfo,endDate);
-    comList.sort(compareTop("SH_SN"));
-    // 取前十
-    var comList = comList.slice(0,10);
-    // 拼接字符串
-    setSDLTGInfo(comList);
-};
-// 对象组成的数组，按照 prop 从小到大排序
-function compareTop(prop){
-    return function(obj1, obj2){
-        var val1 = obj1[prop];
-        var val2 = obj2[prop];
-
-        if (!isNaN(Number(val1)) && !isNaN(Number(val2))) {
-            val1 = Number(val1);
-            val2 = Number(val2);
-        }
-       
-        if(val1 < val2){
-            return -1;
-        }else if(val1 > val2){
-            return 1;
-        }else{
-            return 0;
-        }
-
-    }
-};
-// 获取最新报告期
-function getEndDate(data){
-    var g_endDate = "0000-00-00";
-    $.each(data,function(i,obj){
-        if(obj.END_DT.split(" ")[0]>g_endDate.split(" ")[0]){
-            g_endDate = obj.END_DT;
-        }
-    });
-    return g_endDate;
-};
-// 获取最新报告期的流通股
-function getComList(data,endDate){
-    var comList = [];
-    $.each(data,function(i,obj){
-        if(obj.END_DT==endDate){
-            comList.push(obj);
-        }
-    });
-    return comList;
-};
-// 十大流通拼接整个模块
-function setSDLTGInfo(list){
-    var txt =  $(".bb-info ul").html();
-    $.each(list,function(i,obj){
-        var s_hld_shr = setUnit(obj.HLD_SHR.replace(/,/g,"").trim());
-        if(obj.DIRECT==0){
-            obj.DIRECT = "不变";
-        }
-        var className = obj.DIRECT=="减持"?"green":(obj.DIRECT=="增持"?"red":null);
-        var s_hld_shr_chg = parseInt(obj.HLD_SHR_CHG_LST)!=0?setUnit(obj.HLD_SHR_CHG_LST.replace(/,/g,"").trim()):"";
-        txt += "<li>\
-                    <span>"+obj.SH_NAME+"</span>\
-                    <span>"+floatFixedTwo(obj.TTL_CPTL_RAT)+"%</span>\
-                    <span>"+s_hld_shr+"</span>\
-                    <span class="+className+">"+obj.DIRECT+s_hld_shr_chg+"</span>\
-                </li>";
-        
-    })
-    $(".bb-info ul").html(txt)
-};
-// 五档盘口拼接li
-function setfillPK(data){
-    $("#withoutPKCJData").hide().siblings().show();
-    var bids = data.Bids,       // 买
-        offer = data.Offer,     // 卖
-        obj_titalB = setUnit(data.TotalBidVolume/100,true),      // 买盘(外盘)总量
-        obj_titalO = setUnit(data.TotalOfferVolume/100,true),    // 卖盘(内盘)
-        obj_minus = setUnit(Math.abs(data.TotalBidVolume-data.TotalOfferVolume)/100, true),         // 委差      
-        percent = (data.TotalBidVolume-data.TotalOfferVolume)/(data.TotalBidVolume + data.TotalOfferVolume)*100,  // 委比
-        txtOffer = "",
-        txtBids = "",
-        upperCase = ["一","二","三","四","五"],
-        titalB = Math.round(obj_titalB.value)+obj_titalB.unit,
-        titalO = Math.round(obj_titalO.value)+obj_titalO.unit,
-        minus = Math.round(obj_minus.value)+obj_minus.unit;
-
-    $.each(upperCase,function(i,obj){
-        // 拼接盘口和逐笔成交的拼接字符串
-        txtOffer = setPKHtml(obj,"卖",offer[i]) + txtOffer;
-        txtBids += setPKHtml(obj,"买",bids[i]);
-    });
-
-    var classNameColor = getColorName(data.TotalBidVolume,data.TotalOfferVolume);
-   
-    var innerHtmlStr = "<h2>五档盘口</h2>\
-                        <div class=\"cb-title\">\
-                            <p>委比：<span class=\"cbt-wb "+classNameColor+"\"\>"+floatFixedTwo(percent)+"%</span></p>\
-                            <p>委差：<span class=\"cbt-wc "+classNameColor+(classNameColor=="green"?"\">-":"\">")+minus+"</span></p>\
-                        </div>\
-                        <ul>"+txtOffer+"</ul>\
-                        <ul>"+txtBids+"</ul>\
-                        <div class=\"cb-title cb-title-sub\">\
-                            <p>外盘：<span class=\"red cbt-wp\">"+titalB+"</span></p>\
-                            <p>内盘：<span class=\"green cbt-np\">"+titalO+"</span></p>\
-                        </div>";
-
-
-
-    $(".cb-pk").html(innerHtmlStr);
-};
-// 五档盘口的统一拼接整个模块
-function setPKHtml(obj, status, data){
-    if(data){
-        var txtData = "<span class="+getColorName(data.Price,StockSocket.FieldInfo.PrePrice)+">"+floatFixedTwo(data.Price)+"</span>\
-                       <span>"+setUnit(Math.round(data.Volume/100))+"</span>";
-    }else{
-        var txtData = "<span>--</span><span>--</span>";
-    }
-    
-    var text = "<li><span>"+status+obj+"</span>"+txtData+"</li>";
-    return text;
-};
-// 逐笔成交拼接
-function setfillZBCJ(data){
-
-    var text = $(".cb-cj ul")[0]?$(".cb-cj ul").html():"";
-
-    var time,price,volumn,dir;
-    time = $(".cb-cj ul li:last span:eq(0)").text();
-    price = $(".cb-cj ul li:last span:eq(1)").text();
-    volumn = parseInt($(".cb-cj ul li:last span:eq(2)").text());
-    dir = $(".cb-cj ul li:last span:eq(3)").text();
-
-    $.each(data,function(i,obj){
-
-        var absideStr = (obj.ABSide==83)?("卖出"):((obj.ABSide==66)?("买入"):(obj.ABSide==0)?("平盘"):"");
-        var abside = (obj.ABSide==83)?("<span class='green'>卖出</span>"):((obj.ABSide==66)?("<span class='red'>买入</span>"):(obj.ABSide==0)?("<span>平盘</span>"):"");
-        
-        var a = time==formatTimeSec(obj.MarketTime),
-            b = price==floatFixedTwo(obj.RecorePrice),
-            c = volumn==Math.round(obj.Volume/100),
-            d = dir==absideStr;
-
-        if(a&&b&&c&&d){
-            text = text;
-        }else{
-            text = text + "<li><span>"+formatTimeSec(obj.MarketTime)+"</span><span>"+floatFixedTwo(obj.RecorePrice)+"</span><span>"+Math.round(obj.Volume/100)+"</span>"+abside+"</li>";
-        }
-    });
-
-    var innerHtmlStr = "<h2>逐笔成交</h2>\
-                        <ul>"+text+"</ul>";
-    $(".cb-cj").html(innerHtmlStr);
-
-    // 保留5条
-    if($(".cb-cj li").length>5){
-
-        $(".cb-cj li:lt("+($(".cb-cj li").length-5)+")").remove();
-
-    }
-};
 /*
  * 绘制KCharts图相关函数
  */
 // K线图方法
-function KCharts(socket, dataList, isHistory){
-    if(dataList.length>0){
+function KCharts(dataList, isHistory){
+
+    
+    if(dataList){
         $("#withoutData").hide().siblings().show();
 
         // 解析数据
@@ -915,30 +504,26 @@ function splitData(data, isHistory) {
             e_day = week[(new Date(e_date)).getDay()],        // 计算星期
             e_time;  
 
-        switch(KLineSocket.option.lineType){
-            case "minute":
-                e_time = e_date + " " + e_day + " " + formatTime((object.Time/100000>=1)?object.Time:("0"+object.Time));
-                k_categoryData.push(e_time);
-                break;
-            case "day":
-                KLineSocket.HistoryData.hTime = formatTime((object.Time/100000>=1)?object.Time:("0"+object.Time));
-                k_categoryData.push(e_date);
-                break; 
-            default:;
-        }    
+        if(KLineSocket.option.lineType=="day"||KLineSocket.option.lineType=="week"||KLineSocket.option.lineType=="month"||KLineSocket.option.lineType=="year"){
+            KLineSocket.HistoryData.hTime = formatTime((object.Time/100000>=1)?object.Time:("0"+object.Time));
+            k_categoryData.push(e_date);
+        }else{
+            e_time = e_date + " " + e_day + " " + formatTime((object.Time/100000>=1)?object.Time:("0"+object.Time));
+            k_categoryData.push(e_time);
+        }  
 
-        if(!lastClose){
-            lastClose = object.Open;                          // 上一根柱子的收盘价
+        if(!KLineSocket.option.lastClose){
+            KLineSocket.option.lastClose = object.Open;                          // 上一根柱子的收盘价
         }
         // 如果是最后一条数据的更新，lastClose就是前一根柱子的收盘价
         if(k_categoryData[0].toString() == KLineSocket.HistoryData.hCategoryList[KLineSocket.HistoryData.hCategoryList.length-1]){
-            lastClose = KLineSocket.HistoryData.hValuesList[KLineSocket.HistoryData.hValuesList.length-2][1];
+            KLineSocket.option.lastClose = KLineSocket.HistoryData.hValuesList[KLineSocket.HistoryData.hValuesList.length-1][1];
         }
 
         let e_open = (object.Open),          // 开
             e_highest = (object.High),       // 高
             e_lowest = (object.Low),         // 低
-            e_price = (KLineSocket.option.lineType=="day"&&(!isHistory))?(object.Last):(object.Price),           // 收盘价
+            e_price = ((KLineSocket.option.lineType=="day"||KLineSocket.option.lineType=="week"||KLineSocket.option.lineType=="month"||KLineSocket.option.lineType=="year")&&(!isHistory))?(object.Last):(object.Price),           // 收盘价
             e_value = [                                       // 开收低高-蜡烛图数据格式
                 e_open, 
                 e_price, 
@@ -946,16 +531,16 @@ function splitData(data, isHistory) {
                 e_highest
             ],
             e_valuePercent = [                                // 开收低高-百分比-相对上一根柱子的收盘价
-                ((e_open-lastClose)*100/lastClose),
-                ((e_price-lastClose)*100/lastClose),
-                ((e_lowest-lastClose)*100/lastClose),
-                ((e_highest-lastClose)*100/lastClose)
+                ((e_open-KLineSocket.option.lastClose)*100/KLineSocket.option.lastClose),
+                ((e_price-KLineSocket.option.lastClose)*100/KLineSocket.option.lastClose),
+                ((e_lowest-KLineSocket.option.lastClose)*100/KLineSocket.option.lastClose),
+                ((e_highest-KLineSocket.option.lastClose)*100/KLineSocket.option.lastClose)
             ],
             e_volumnData = object.Volume,                              // 成交量---单位：股
-            e_zValues = lastClose?(e_price-lastClose):0,               // 涨幅-相对昨收      
-            e_zValuesPercent = (e_zValues*100/lastClose),              // 涨幅百分比
+            e_zValues = KLineSocket.option.lastClose?(e_price-KLineSocket.option.lastClose):0,               // 涨幅-相对昨收      
+            e_zValuesPercent = (e_zValues*100/KLineSocket.option.lastClose),              // 涨幅百分比
             e_amplitude = (e_highest - e_lowest),                      // 振幅
-            e_amplPercent = (100*e_amplitude/lastClose);               // 振幅百分比
+            e_amplPercent = (100*e_amplitude/KLineSocket.option.lastClose);               // 振幅百分比
 
         if(isHistory){
             e_volume = (e_price-e_open)>=0?[i,e_volumnData,-1]:[i,e_volumnData,1];   // 成交量-数组，存储索引，值，颜色对应的值                         
@@ -963,7 +548,7 @@ function splitData(data, isHistory) {
             e_volume = (e_price-e_open)>=0?[KLineSocket.HistoryData.hVolumesList.length,e_volumnData,-1]:[KLineSocket.HistoryData.hVolumesList.length,e_volumnData,1];  
         }
 
-        lastClose = e_price;
+        KLineSocket.option.lastClose = e_price;
 
         // 每条数据存入数组中
         k_date.push(e_date);                
@@ -1161,7 +746,16 @@ function chartPaint(isHistory){
                         }
                     },
                     labelFormatter: function (valueStr) {
-                        return KLineSocket.HistoryData.hCategoryList[valueStr];
+                        // if(KLineSocket.option.lineType=="day"||KLineSocket.option.lineType=="week"||KLineSocket.option.lineType=="month"||KLineSocket.option.lineType=="year"){
+
+                        // }else{
+
+                        // }
+                        if(KLineSocket.option.lineType!="mline"){
+                            var valueList = KLineSocket.HistoryData.hCategoryList[valueStr].split(" ");
+                            return valueList[valueList.length-1];
+                        }
+                        // return ;
                     },
                     showDetail: true
                 },
@@ -1188,23 +782,158 @@ function chartPaint(isHistory){
                     boundaryGap: true,
                     axisTick:{ show:false },
                     axisLine: { show:false },
-                    splitLine: {
-                        show: true,
-                        interval: 15,
-                        lineStyle: {
-                            color: '#e5e5e5'
-                        }
-                    },
+                    // splitLine: {
+                    //     show: true,
+                    //     interval: function(index,value){
+                    //         // var splitNum=0;
+                    //         var valueList = KLineSocket.HistoryData.hCategoryList;
+                    //         var time = valueList[index];
+                    //         var prev;
+                    //         if(index==0){
+                    //             return true;
+                    //         }else{
+                    //             prev = valueList[index-1];
+                    //         }
+                    //         // if(!valueList[index+1]){
+                    //             // return true;
+                    //         // }
+                    //         switch(KLineSocket.option.lineType){
+                    //             case "day":
+                    //             case "week":
+                    //                     if(  time.split('-')[0]!=prev.split('-')[0] ){
+                    //                         return true;
+                    //                     }
+                    //                     return false
+                    //                 break;
+                    //             case "month":
+                    //             // console.log(Number(time.split('-')[0]),Number(prev.split('-')[0])+2)
+                    //                     if(  Number(time.split('-')[0])==Number(prev.split('-')[0])+2 ){
+                    //                         return true;
+                    //                     }
+                    //                     return false
+                    //                 break;
+                    //             case "year":
+                    //                     if(  index%5 == 0 ){
+                    //                         return true;
+                    //                     }
+                    //                     return false
+                    //                 break;
+                    //             case "minute":
+                    //             case "fivem":
+                    //             case "tenm":
+                    //             case "fifm":
+                    //             case "thim":
+                    //             case "hour":
+                    //                     var time1 = time.split(' ')[2];
+                    //                     var time2 = prev.split(' ')[2];
+                    //                     // console.log(time1.split(":")[1])
+                    //                     if( time1.split(":")[0] != time2.split(":")[0] ){
+                    //                         return true;
+                    //                     }
+                    //                     return false
+                    //                 break;
+                    //             default:;
+                    //         }
+                    //     },
+                    //     lineStyle: {
+                    //         color: '#e5e5e5'
+                    //     }
+                    // },
                     axisLabel: {
                         show: true,
                         color: '#999',
                         fontSize: 14,
+                        // interval: function(index,value){
+                        //     // var splitNum=0;
+                        //     var valueList = KLineSocket.HistoryData.hCategoryList;
+                        //     var time = valueList[index];
+                        //     var prev;
+                        //     if(index==0){
+                        //         return true;
+                        //     }else{
+                        //         prev = valueList[index-1];
+                        //     }
+                        //     // if(!valueList[index+1]){
+                        //         // return true;
+                        //     // }
+                        //     switch(KLineSocket.option.lineType){
+                        //         case "day":
+                        //         case "week":
+                        //         case "month":
+                        //                 if(  time.split('-')[0]!=prev.split('-')[0] ){
+                        //                     return true;
+                        //                 }
+                        //                 return false
+                        //             break;
+                        //         case "year":
+                        //                 if(  index%5 == 0 ){
+                        //                     return true;
+                        //                 }
+                        //                 return false
+                        //             break;
+                        //         case "minute":
+                        //         case "fivem":
+                        //         case "tenm":
+                        //         case "fifm":
+                        //         case "thim":
+                        //         case "hour":
+                        //                 var time1 = time.split(' ')[2];
+                        //                 var time2 = prev.split(' ')[2];
+                        //                 // console.log(time1.split(":")[1])
+                        //                 if( time1.split(":")[0] != time2.split(":")[0] ){
+                        //                     return true;
+                        //                 }
+                        //                 return false
+                        //             break;
+                        //         default:;
+                        //     }
+                        // },
                         formatter : function(value, index){
-                            if(KLineSocket.option.lineType=="minute"){
-                                    return value.split(" ")[2];
-                                }else{
-                                    return value;
-                                }
+
+                            // var time = KLineSocket.HistoryData.hCategoryList[index];
+                            // var next,prev;
+                            // if(index==0){
+                            //     return value;
+                            // }else{
+                            //     prev = KLineSocket.HistoryData.hCategoryList[index-1];
+                            // }
+                            // if(!KLineSocket.HistoryData.hCategoryList[index+1]){
+                            //     console.log(value,KLineSocket.HistoryData.hCategoryList[index])
+                            //     return KLineSocket.HistoryData.hCategoryList[index];
+                            // }else{
+                            //     next = KLineSocket.HistoryData.hCategoryList[index+1]
+                            // }
+
+                            // var a = time.split('-')[0]==next.split('-')[0];
+                            // var b = time.split('-')[0]!=prev.split('-')[0]
+                            // if( a && b ){
+                            //     return time.split('-')[0];
+                            // }
+                            // if(KLineSocket.option.lineType=="day"||KLineSocket.option.lineType=="week"||KLineSocket.option.lineType=="month"||KLineSocket.option.lineType=="year"){
+                            //         return value;
+                            //     }else{
+                            //         var time = value.split(" ")[2];
+                            //         var minute = time.split(":")[1];
+                                    
+                            //         if(minute.toString()=="00"||minute.toString()=="30"){ 
+                            //             return time;
+                            //         }
+                                    
+                            //     }
+                            if(KLineSocket.option.lineType=="day"){
+                                return value.split("-")[1]+"/"+value.split("-")[2];
+                            }
+                            if(KLineSocket.option.lineType=="day"||KLineSocket.option.lineType=="week"||KLineSocket.option.lineType=="month"||KLineSocket.option.lineType=="year"){
+                                return value.split("-")[0];
+                            }else{
+                                var time = value.split(" ")[2];
+                                var minute = time.split(":")[1];
+                                
+                                // if(minute.toString()=="00"||minute.toString()=="30"){ 
+                                    return time;
+                                // }
+                                
+                            }
                         }
                     },
                     axisPointer: {
@@ -1269,7 +998,7 @@ function chartPaint(isHistory){
                         color: '#999',
                         fontSize: 14,
                         formatter: function (value, index) {
-                            return (value).toFixed(StockSocket.FieldInfo.Decimal);
+                            return (value).toFixed(xml.options.decimal);
                         }
                     },
                     axisPointer: {
@@ -1277,7 +1006,7 @@ function chartPaint(isHistory){
                         label: {
                             show:true,
                             formatter: function(params){
-                                return params.value.toFixed(StockSocket.FieldInfo.Decimal);
+                                return params.value.toFixed(xml.options.decimal);
                             }
                         }
                     }
@@ -1546,23 +1275,20 @@ function setToolInfo(length, showTip){
     }
     var countent = $("#kline");
     if (length) {
-        $(".name", countent).text(StockSocket.FieldInfo.Name); //指数名称
         $(".date", countent).text(KLineSocket.HistoryData.hDate[setPoint].replace(/-/g,'/')); //日期
         $(".day", countent).text(KLineSocket.HistoryData.hDay[setPoint]); //星期
         // 分钟K线每根柱子都有一条时间数据
         // 日K线，只有最后一根存在当前分钟时间数据
-        switch(KLineSocket.option.lineType){
-            case "minute":
-                $(".time", countent).text(KLineSocket.HistoryData.hCategoryList[setPoint].split(" ")[2]); //时间
-                 break;
-            case "day":
-                KLineSocket.HistoryData.hTime = (KLineSocket.HistoryData.hTime=="00:00")?null:KLineSocket.HistoryData.hTime;
-                if(showTip){
-                    $(".time", countent).text((KLineSocket.KLineSet.mouseHoverPoint==length-1)?KLineSocket.HistoryData.hTime:null); //时间
-                }else{
-                    $(".time", countent).text(KLineSocket.HistoryData.hTime);
-                }
-        };
+        if(KLineSocket.option.lineType=="day"||KLineSocket.option.lineType=="week"||KLineSocket.option.lineType=="month"||KLineSocket.option.lineType=="year"){
+            KLineSocket.HistoryData.hTime = (KLineSocket.HistoryData.hTime=="00:00")?null:KLineSocket.HistoryData.hTime;
+            if(showTip){
+                $(".time", countent).text((KLineSocket.KLineSet.mouseHoverPoint==length-1)?KLineSocket.HistoryData.hTime:null); //时间
+            }else{
+                $(".time", countent).text(KLineSocket.HistoryData.hTime);
+            }
+        }else{
+            $(".time", countent).text(KLineSocket.HistoryData.hCategoryList[setPoint].split(" ")[2]); //时间
+        }
 
         $(".open", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hValuesList[setPoint][0])+"("+floatFixedTwo(KLineSocket.HistoryData.hValuesPercentList[setPoint][0])+"%)")
             .attr("class","open pull-right "+((setPoint==0)?"":getColorName(KLineSocket.HistoryData.hValuesPercentList[setPoint][0],0))); //开
@@ -1581,9 +1307,6 @@ function setToolInfo(length, showTip){
         
         
         $(".amplitude", countent).text(floatFixedDecimal(KLineSocket.HistoryData.hZf[setPoint])+"("+floatFixedTwo(KLineSocket.HistoryData.hZfList[setPoint])+"%)");   // 振幅
-        $(".price", $("#kline .kline-info")).text(floatFixedDecimal(KLineSocket.HistoryData.hValuesList[setPoint][1])); //收
-        $(".z-value", $("#kline .kline-info")).text(floatFixedTwo(KLineSocket.HistoryData.hZValuesListPercent[setPoint])+"%"); //收
-        
 
         var volume = KLineSocket.HistoryData.hVolumesList[setPoint][1];
 
@@ -1592,15 +1315,12 @@ function setToolInfo(length, showTip){
         if(volume>=100){
             //量--单位:手
             $(".volume", countent).text(setUnit(floatFixedZero(volume/100))+"手");
-            $(".volume", $("#kline .kline-info")).text(setUnit(floatFixedZero(volume/100)));
         }else{
             //量--单位:股
             $(".volume", countent).text(volume+"股");
-            $(".volume", $("#kline .kline-info")).text(volume); 
         }
         
     }else{
-        $(".name", countent).text("-");
         $(".date", countent).text("-");
         $(".day", countent).text("-");
         $(".time", countent).text("-");

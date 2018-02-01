@@ -1,13 +1,13 @@
+var yc=0,decimal=2,xml;
 ;(function($,undefined){
     var socket = null;
-    var yc=0;
     var myChart = null;
     var mouseHoverPoint = 0;
     var isHoverGraph = false;
     var sub = 0;
     var colorList = ['#c23a39','#44c96e','#555','#999','#e5e5e5'];//红色,绿色,555,999
     var start = 0,zoom = 10;//左右键时应用
-
+    var stopTime = [];
     var timer;//定时器
 
     var _singleTime,_endTime,_dealDate,_timeFlag;//股票更新的最后时间，交易时间的最后节点，交易日期，变量
@@ -20,7 +20,7 @@
             }
             var data = [{'Time':_timeFlag,'Date':_dealDate,'High':null,'Low':null,'Price':null,'Open':null}];
             initCharts(data,'add',$this);
-        },30000);//30秒运行一次   监测是否有推送数据过来
+        },3000);//30秒运行一次   监测是否有推送数据过来
     }
 
     var WebSocketConnect = function(opt) {
@@ -34,7 +34,7 @@
         };
         // 心跳包请求参数
         this.XTB = {
-            "MsgType":"C646",
+            "MsgType":"Q8050",
             "ExchangeID":opt.exchangeID,
             "InstrumentID":opt.id
         },
@@ -166,6 +166,7 @@
                 if(data.ReturnCode == 0){
                     if(data && data.CodeInfo[0]){
                         data = data.CodeInfo[0];
+                        $(".tb-fn-title").html("<span class=\"fl\">"+data.InstrumentName+"</span><span class=\"fl\">"+data.InstrumentCode+"</span>");
                         compareTime(data,_options);
         
                         socket = new WebSocketConnect(_options);
@@ -175,89 +176,9 @@
                         console.log("没有数据");
                     }
                 }
-                // var allZSCode =  $(xml).find("EXCHANGE PRODUCT SECURITY");
-                // var exponentDateTime = getExponentDateTime(xml,allZSCode);
             }
         });
     };
-    //从XML表中摘出时间，name,id，小数位,指数类型
-    function getExponentDateTime(xmlCode,_codeList){
-        var startTime,endTime,startTime1,endTime1,ids,names,decimalCount,type,json;
-        var exponentDateTime = [];
-        for(var i=0;i<_codeList.length;i++){
-            if(_codeList[i].attributes["ts"]){
-                decimalCount = $($(_codeList[i]).parent("product")[0]).attr("PriceDecimal");
-                type = $($(_codeList[i]).parent("product")[0]).attr("type");
-                ids = _codeList[i].attributes["id"].value;
-                names = _codeList[i].attributes["name"].value;
-                if(_codeList[i].attributes["ts"].value.indexOf(";")>-1){
-                    var st = _codeList[i].attributes["ts"].value.split(";")[0];
-                    var et = _codeList[i].attributes["ts"].value.split(";")[1];
-                    startTime = st.split("-")[0];
-                    endTime = st.split("-")[1];
-                    startTime1 = et.split("-")[0];
-                    endTime1 = et.split("-")[1];
-                    startTime1  = startTime1.split(":")[0] +":"+ parseInt(startTime1.split(":")[1])+1;
-                }else{
-                    startTime = _codeList[i].attributes["ts"].value.split("-")[0];
-                    endTime = _codeList[i].attributes["ts"].value.split("-")[1];
-                    startTime1 = endTime1 = "";
-                }
-                json = {
-                    id:ids,
-                    name:names,
-                    startTime:startTime,
-                    endTime:endTime,
-                    startTime1:startTime1,
-                    endTime1:endTime1,
-                    decimalCount:decimalCount,
-                    type:type
-                };
-                exponentDateTime.push(json);
-            }else{
-                var elValue = $($(_codeList[i]).parent("product")[0]).attr("ts");
-                if(!elValue){
-                    elValue = $($(_codeList[i]).parents("EXCHANGE")).attr("ts");
-                    ids = $(_codeList[i]).attr("id");
-                    names = $(_codeList[i]).attr("name");
-                    type = $($(_codeList[i]).parent()).attr("type");
-                    decimalCount = $($(_codeList[i]).parent()).attr("PriceDecimal");
-                }else{
-                    decimalCount = $($(_codeList[i]).parent("product")[0]).attr("PriceDecimal");
-                    type = $($(_codeList[i]).parent("product")[0]).attr("type");
-                    ids = _codeList[i].attributes["id"].value;
-                    names = _codeList[i].attributes["name"].value;
-                }
-                if(elValue.indexOf(";")>-1){
-                    var st = elValue.split(";")[0];
-                    var et = elValue.split(";")[1];
-                    startTime = st.split("-")[0];
-                    endTime = st.split("-")[1];
-                    startTime1 = et.split("-")[0];
-                    endTime1 = et.split("-")[1];
-                    // if($($(_codeList[i]).parent("product")[0]).attr("name") == "指数"){
-                        startTime1  = startTime1.split(":")[0] +":"+ parseInt(startTime1.split(":")[1])+1;
-                    // }
-                }else{
-                    startTime = elValue.split("-")[0];
-                    endTime = elValue.split("-")[1];
-                    startTime1 = endTime1 = "";
-                }
-                json = {
-                    id:ids,
-                    name:names,
-                    startTime:startTime,
-                    endTime:endTime,
-                    startTime1:startTime1,
-                    endTime1:endTime1,
-                    decimalCount:decimalCount,
-                    type:type
-                };
-                exponentDateTime.push(json);
-            }
-        }
-        return exponentDateTime;
-    }
     //1、用id判断出是哪个指数，获取其开始时间和结束时间、保留小数位、股票名字
     function compareTime(data,_options){
         if(!data.time) return;
@@ -273,7 +194,7 @@
             endTime = data.time.split("-")[1];
             startTime1 = endTime1 = "";
         }
-        _options.decimal = parseInt(data.PriceDecimal);//保留小数位数
+        decimal = _options.decimal = parseInt(data.PriceDecimal);//保留小数位数
         _options.typeIndex = data.ProductType;//指数类型
         _options.stockName = data.InstrumentName;
         var startT = parseInt(startTime.split(":")[0]);
@@ -349,9 +270,8 @@
                     // $(document).trigger("SBR_HQ",data);
                     if(!yc){
                         yc = data.PreClose; //获取昨收值
-                        return;
                     }
-
+                    setFieldInfo(data);
                     // 接口变更  日期为前一天
                     // todayDate = formatDate(data[0].Date + sub);
                 break;
@@ -368,12 +288,106 @@
                         redrawChart(data,$this);
                     }
                 break;
-                case "R646":  //心跳包
+                case "R8050":  //心跳包
                     // console.log(data);
                 default:
             }
             socket.reset().start();
         };
+    };
+    // 设置顶部信息  当前指数/个股 请求快照数据
+    function setFieldInfo(data){
+        var high,low,open,zf,price,zd,zdf,dealVal,dealVol;
+        if(data){
+            high = data.High;
+            low = data.Low;
+            open = data.Open;
+            dealVal = data.Value;
+            dealVol = data.Volume;
+            price = data.Last;
+            // 未开盘时，昨收为0，计算涨跌幅和振幅会出现NAN，于是进行区分，为0%
+            zf = yc==0?floatFixedTwo(0):floatFixedTwo((high - low)/yc*100);
+            zd = price - yc;
+            zdf = yc==0?floatFixedTwo(0):floatFixedTwo((zd/yc)*100);
+
+            $.each($(".tb-fielList li"),function(index,obj){
+                var spanObj = $(obj).children("span"),
+                    compareData = yc,
+                    data,
+                    unit;
+                    switch(index){
+                        case 0:
+                            data = floatFixedDecimal(high);
+                            break;
+                        case 1:
+                            data = floatFixedDecimal(open);
+                            break;
+                        case 2:
+                            data = floatFixedDecimal(low);
+                            break;
+                        case 3:
+                            data = floatFixedDecimal(yc);
+                            compareData = false;
+                            break;
+                        case 4:
+                            data = setUnit(floatFixedDecimal(dealVal));
+                            compareData = false;
+                            unit = "元";
+                            break;
+                        case 5:
+                            return;
+                        case 6:
+                            if(dealVol>=100){
+                                data = setUnit(dealVol/100);
+                                unit = "手";
+                            }else{
+                                data = dealVol;
+                                unit = "股";
+                            }
+                            compareData = false;
+                            break;
+                        case 7:
+                            return;
+                        case 8:
+                            return;
+                        case 9:
+                            data = zf;
+                            compareData = false;
+                            break;
+                        default:;
+                    }
+                
+                setTextAndColor(spanObj, data, compareData, unit);
+                compareData = yc;
+            });
+
+            $.each($(".tb-fn-num span"),function(index,obj){
+                var spanObj = $(obj),
+                    compareData = yc,
+                    data,
+                    unit;
+                switch(index){
+                    case 0:
+                        data = floatFixedDecimal(price);
+                        spanObj.html("<i class="+getColorName(data, compareData)+"></i>"+data);
+                        break;
+                    case 1:
+                        data = floatFixedDecimal(zd);
+                        compareData = "0";
+                        setTextAndColor(spanObj, data, compareData, unit);
+                        break;
+                    case 2:
+                        data = zdf;
+                        compareData = "0";
+                        unit = "%";
+                        setTextAndColor(spanObj, data, compareData, unit);
+                        break;
+                    default:;
+                }
+                compareData = yc;
+            });
+
+        }
     };
     //请求订阅 获取昨收
     InitXMLIChart.prototype.take_HQ = function(){
@@ -714,106 +728,65 @@
                             snap:true
                         },
                         tooltip: {
-                            // show:false,
                             trigger: 'axis',
                             showContent:false
-                            // enterable:false,
-                            // transitionDuration:0,
-                            // formatter:function(params){
-                            //     var str = '<p style="font-size:20px;color:rgba(255,255,255,0.5);text-align:left;">'+((params[0].axisValueLabel).split(" ")[0]).replace(/-/g,"/")+'</p>'+
-                            //     '<p style="font-size:24px;margin-top: 10px;color: #fff;text-align:left;">'+$this.stockName+(params[1].value?params[1].value:"-")+'</i></p>';
-                            //     return str;
-                            // },
-                            // backgroundColor:"#1e2131",
-                            // borderColor:"#264378",
-                            // borderWidth:1,
-                            // padding:[10,20],
-                            // textStyle:{
-                            //     fontFamily:'Helvetice',
-                            //     lineHeight:30,
-                            //     fontSize:20
-                            // },
-                            // extraCssText: 'box-shadow: 0 0 7px rgba(0, 0, 0, 0.35);',
-                            // axisPointer: {
-                            //     type:'cross',
-                            //     crossStyle:{
-                            //         color:'rgba(255,255,255,0.5);',
-                            //     }
-                            // },
                         },
-                        dataZoom: [
-                            {
-                                type: 'inside',
-                                xAxisIndex: [0, 1],
-                                start: 0,
-                                end: 100,
-                            },
-                            {
-                                show: true,
-                                xAxisIndex: [0, 1],
-                                type: 'slider',
-                                bottom:'0',
-                                height:"40px",
-                                start: 0,
-                                end: 100,
-                                backgroundColor:"transparent",
-                                fillerColor:"rgba(43,46,61,0.5)",
-                                borderColor:"#2b2f40",
-                                // handleIcon:'M 100 100 L 300 100 L 300 700 L 100 700 Z',
-                                handleStyle:{
-                                    color:"#62646f",
-                                    borderColor:"#62646f",
-                                    borderWidth:1
-                                },
-                                textStyle:{
-                                    color:colorList[3],
-                                    fontSize:14
-                                },
-                                dataBackground:{
-                                    lineStyle:{
-                                        color:'rgba(255,255,255,0.5)',
-                                    },
-                                    areaStyle:{
-                                        color:"transparent"
-                                    }
-                                }
-                            }
-                        ],
+                        // dataZoom: [
+                        //     {
+                        //         type: 'inside',
+                        //         xAxisIndex: [0, 1],
+                        //         start: 0,
+                        //         end: 100,
+                        //     },
+                        //     {
+                        //         show: true,
+                        //         xAxisIndex: [0, 1],
+                        //         type: 'slider',
+                        //         bottom:'0',
+                        //         height:"40px",
+                        //         start: 0,
+                        //         end: 100,
+                        //         backgroundColor:"transparent",
+                        //         fillerColor:"rgba(43,46,61,0.5)",
+                        //         borderColor:"#2b2f40",
+                        //         // handleIcon:'M 100 100 L 300 100 L 300 700 L 100 700 Z',
+                        //         handleStyle:{
+                        //             color:"#62646f",
+                        //             borderColor:"#62646f",
+                        //             borderWidth:1
+                        //         },
+                        //         textStyle:{
+                        //             color:colorList[3],
+                        //             fontSize:14
+                        //         },
+                        //         dataBackground:{
+                        //             lineStyle:{
+                        //                 color:'rgba(255,255,255,0.5)',
+                        //             },
+                        //             areaStyle:{
+                        //                 color:"transparent"
+                        //             }
+                        //         }
+                        //     }
+                        // ],
                         xAxis: [
                             {
                                 type:"category",
                                 axisTick: {
-                                    interval: function (number, string) {
-                                        if($this.typeIndex == "128" || $this.typeIndex == "224"){
-                                            if (number % 180 == 0) {
-                                                return true;
-                                            } else {
-                                                return false;
-                                            }
-                                        }else{
-                                            if (number % 30 == 0) {
-                                                return true;
-                                            } else {
-                                                return false;
-                                            }
-                                        }
-                                    },
                                     show:false
                                 },
                                 axisLabel: {
                                     interval: function (number, string) {
-                                        if($this.typeIndex == "128" || $this.typeIndex == "224"){
-                                            if (number % 180 == 0) {
-                                                return true;
-                                            } else {
-                                                return false;
+                                        if(number == 0 || number == $this.v_data.length-1){
+                                            return true;
+                                        }
+                                        if(stopTime){
+                                            if(string.indexOf(stopTime[0].split(" ")[1])>-1){
+                                                return true
                                             }
-                                        }else{
-                                            if (number % 30 == 0) {
-                                                return true;
-                                            } else {
-                                                return false;
-                                            }
+                                        }
+                                        if(string.indexOf("00")>-1){
+                                            return true
                                         }
                                     },
                                     formatter: function (value, number) {
@@ -1161,7 +1134,6 @@
                         openPrice[count - 1],
                         lowPrice[count - 1]
                     ];
-                    // set_marketTool(marktToolData,$this); //设置动态行情条
                     var topPixel = 0;
                     myChart.on('showTip', function (params) {
                         mouseHoverPoint = params.dataIndex;
@@ -1172,7 +1144,7 @@
                         }
                         $(".mline_info").css({"top":pixel[1],"left":pixel[0]-70});
                         topPixel = pixel[1]-150;
-                        var tooltipTime = $this.v_data[mouseHoverPoint].split(" ")[0];
+                        var tooltipTime = $this.v_data[mouseHoverPoint];
                             tooltipTime = tooltipTime.replace(/-/g,"/");
                         if ($this.history_data[mouseHoverPoint]) {
                             var tooltipHtml = '<span><label>Open</label><i>'+openPrice[mouseHoverPoint]+'</i></span>'+
@@ -1439,19 +1411,20 @@
         $this.z_history_data = []; //涨跌幅历史记录
         $this.a_history_data = []; //成交量记录
         $this.flag_data = []; //成交量颜色记录 1为绿 -1为红
-        $this.v_data = [];
-        $this.c_data = [];
+        // $this.v_data = [];
+        // $this.c_data = [];
         $this.open_data = [];
         $this.high_data = [];
         $this.low_data = [];
+        setFieldInfo({High:0,Low:0,Open:0,Value:0,Volume:0,Last:0});
         var decimal = $this.decimal;
         if(data){
             if(myChart == undefined) return;
             yc = parseFloat(yc);
             if (yc) {
-                var minY = (yc - yc*0.03).toFixed(decimal);
+                var minY = (yc - yc*0.1).toFixed(decimal);
                 var middleY = yc.toFixed(decimal);
-                var maxY = (yc + yc*0.03).toFixed(decimal);
+                var maxY = (yc + yc*0.1).toFixed(decimal);
                 var dd = ((parseFloat(minY) - parseFloat(yc)) / parseFloat(yc) * 100);
 
                 if(Math.abs(dd) > 1){
@@ -1482,11 +1455,11 @@
                         interval: split
                     }
                 ],
-                xAxis:[{
-                    data:v_data
-                },{
-                    data:v_data
-                }],
+                // xAxis:[{
+                //     data:v_data
+                // },{
+                //     data:v_data
+                // }],
                 series: [
                     {
                         data: []
@@ -1532,6 +1505,7 @@
                 
                 b_time1 = moment(finishTime).utc().valueOf();
                 b_time2 = moment(beginTime1).utc().valueOf();
+                stopTime = [finishTime,beginTime1];
             }else{
                 beginTime = todayDate + " " + $this.nowDateTime[0].startTime;
                 finishTime = todayDate + " " + $this.nowDateTime[0].endTime;
@@ -1542,7 +1516,7 @@
                 finishTime = todayDate + " " + $this.nowDateTime[0].endTime;
                 beginTime1 = todayDate + " " + $this.nowDateTime[1].startTime1;
                 finishTime1 = todayDate + " " + $this.nowDateTime[1].endTime1;
-
+                stopTime = [finishTime,beginTime1];
                 // 前半段时间的起始时间和结束时间比较
                 if(moment(beginTime).utc().valueOf() < moment(finishTime).utc().valueOf()){
                     //都是当天时间 
@@ -1611,7 +1585,7 @@
         options = $.extend({},$.fn.initMline.defaults,options || {});
         var $this = $(this);
         // 初始化代码表
-        var xml = new InitXMLIChart(options);
+        xml = new InitXMLIChart(options);
         return xml.initXML();
     };
 
