@@ -27,6 +27,11 @@ li{
 h1,h2{
     font-weight: normal;
 }
+img{
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
 .fl{
     float: left;
 }
@@ -208,10 +213,11 @@ body{
 }
 .market-chart-decs>i:first-child{
     font-size: 24px;
-    /* color: #e22f2a; */
 }
 .market-main-chart{
     padding-right: 40px;
+    text-align: center;
+    line-height: 242px;
 }
 .market-main-chart>a{
     color: #333;

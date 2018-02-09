@@ -372,8 +372,8 @@ ul{
     left: 72px;
     top: 5%;
     width: 180px;
-    height: 310px;
-    padding: 4px 10px;
+    height: 280px;
+    padding: 10px;
     box-sizing: border-box;
     background-color: #fff;
     border: solid 1px #b4b4b4;
@@ -452,6 +452,7 @@ ul{
 .volumn{
 	top: 57.5%;
 	top: 77%;
+	width: 68px;
 	height: 9%;
 	z-index: 999;
 }
@@ -470,7 +471,7 @@ ul{
 	text-align: right;
 	font-size: 14px;
 	text-align: right;
-	color: #999;
+	color: #000;
 }
 .volumeMax,.vmMax{
 	height: 81%;

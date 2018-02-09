@@ -114,7 +114,6 @@ var yc=0,decimal=2,xml;
             //订阅快照请求
             HQAll : {
                 "MsgType":"S1010",
-                // "DesscriptionType":"3",
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "Instrumenttype":"1"
@@ -132,7 +131,6 @@ var yc=0,decimal=2,xml;
             // 实时推送数据
             RTDATA : {
                 "MsgType":"S1010",
-                // "DesscriptionType":"3",
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "Instrumenttype":"11"
@@ -140,7 +138,6 @@ var yc=0,decimal=2,xml;
             // 清盘
             QPDATA : {
                 "MsgType":"Q8002",
-                // "DesscriptionType":"3",
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "PructType":"0"
@@ -167,6 +164,8 @@ var yc=0,decimal=2,xml;
                     if(data && data.CodeInfo[0]){
                         data = data.CodeInfo[0];
                         $(".tb-fn-title").html("<span class=\"fl\">"+data.InstrumentName+"</span><span class=\"fl\">"+data.InstrumentCode+"</span>");
+			// 从代码表中获取昨收值
+	                yc = data.PreClose?parseFloat(data.PreClose):0;
                         compareTime(data,_options);
         
                         socket = new WebSocketConnect(_options);
@@ -187,7 +186,7 @@ var yc=0,decimal=2,xml;
             startTime = (data.time.split(";")[0]).split("-")[0];
             endTime = (data.time.split(";")[0]).split("-")[1];
             startTime1 = (data.time.split(";")[1]).split("-")[0];
-            endTime1 = (data.time.split(";")[1]).split("-")[1];
+            endTime1 = formatTimeMin((data.time.split(";")[1]).split("-")[1]);
             startTime1  = startTime1.split(":")[0] +":"+ parseInt(startTime1.split(":")[1])+1;
         }else{//无分段时间
             startTime = data.time.split("-")[0];
@@ -604,6 +603,9 @@ var yc=0,decimal=2,xml;
             }else{
                 if(data.KLineSeriesInfo && data.KLineSeriesInfo.length>0){
                     data = data.KLineSeriesInfo;
+		    if(!yc){
+                        yc =  parseFloat(data[data.length-1].Open);
+                    }
                     var price = [];//价格
                     var volume = [];//成交量
                     var zdfData = [];//涨跌幅
@@ -622,10 +624,10 @@ var yc=0,decimal=2,xml;
                             var dateStamp = dateToStamp(formatDate(data[j].Date) +" "+formatTime(data[j].Time));
                             if($this.c_data[i] == dateStamp){
                                 var fvalue = parseFloat(data[j].Price);//价格
-                                if(data[j].Price >= limitUp){
+                                if(fvalue >= limitUp){
                                     price[i] = parseFloat(limitUp);
                                     zdfData[i] = 0.10;
-                                }else if(data[j].Price <= limitDown){
+                                }else if(fvalue <= limitDown){
                                     price[i] = parseFloat(limitDown);
                                     zdfData[i] = 0.10;
                                 }else{
@@ -666,9 +668,9 @@ var yc=0,decimal=2,xml;
                     //取绝对值  差值 
                     $this.interval = $this.interval + $this.interval*0.1;
                     if (yc) {
-                        var minY = (yc - $this.interval).toFixed($this.decimal);//(minPrice - r1).toFixed($this.decimal);//(yc - $this.interval).toFixed($this.decimal);
+                        var minY = Number((yc - $this.interval).toFixed($this.decimal));//(minPrice - r1).toFixed($this.decimal);//(yc - $this.interval).toFixed($this.decimal);
                         var middleY = yc.toFixed($this.decimal);
-                        var maxY = (yc + $this.interval).toFixed($this.decimal);//(maxPrice + r1).toFixed($this.decimal);//(yc + $this.interval).toFixed($this.decimal);
+                        var maxY = Number((yc + $this.interval).toFixed($this.decimal));//(maxPrice + r1).toFixed($this.decimal);//(yc + $this.interval).toFixed($this.decimal);
                         if(minY < limitDown){
                             minY = limitDown;
                         }
@@ -790,7 +792,7 @@ var yc=0,decimal=2,xml;
                                         }
                                     },
                                     formatter: function (value, number) {
-                                        var tVal = value.split(" ")[3];
+                                        var tVal = value.split(" ")[2];
                                         return tVal;
                                     },
                                     textStyle: {

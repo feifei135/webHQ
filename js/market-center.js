@@ -1,5 +1,6 @@
-var wsUrlDevelop = 'ws://103.66.33.67:80';//'ws://103.66.33.31:443';//开发
-var stockXMlUrl = "http://103.66.33.58:443/GetCalcData";//"../xml/ths.xml";//"http://172.17.20.203:6789/101";
+var wsUrlDevelop = 'ws://103.66.33.67:80';
+var stockXMlUrl = "http://103.66.33.58:443/GetCalcData";
+var requestOffer = "ws://103.66.33.67:443";
 var exponentDateTime = [];//解析XML后得到的数组 所有指数的时间、类型、id、小数位数等
 var elementId;
 var ZSId,ExchangeID;
@@ -10,8 +11,7 @@ var _ThirS = [{name:"上证综指",sectionid:3,code:"000001"},{name:"深证成�
 var _FourthS = [{name:"深证成指",sectionid:4,code:"399001"},{name:"创业板",sectionid:4,code:"395004"},{name:"中小板",sectionid:4,code:"399003"}];
 var _FifthS = [{name:"深证成指",sectionid:5,code:"399001"},{name:"创业板",sectionid:5,code:"395004"},{name:"中小板",sectionid:5,code:"399003"}];
 var _SixthS = [{name:"深证成指",sectionid:6,code:"399001"},{name:"创业板",sectionid:6,code:"395004"},{name:"中小板",sectionid:6,code:"399003"}];
-
-
+var oWs=offerWs=null;
 $(function(){
     $("#main1").initMline(
         {
@@ -19,6 +19,7 @@ $(function(){
             exchangeID:"1",
             stockName:_FirstS[0].name,
             stockCode:_FirstS[0].code,
+            socket:null
         }
     );
     $("#main2").initMline(
@@ -26,7 +27,7 @@ $(function(){
             id:_FirstS[1].code,
             exchangeID:"2",
             stockName:_FirstS[1].name,
-            stockCode:_FirstS[1].code,
+            stockCode:_FirstS[1].code
         }
     );
     $("#main3").initMline(
@@ -34,7 +35,7 @@ $(function(){
             id:_FirstS[2].code,
             exchangeID:"2",
             stockName:_FirstS[2].name,
-            stockCode:_FirstS[2].code,
+            stockCode:_FirstS[2].code
         }
     );
     checkoutBlock();
@@ -45,6 +46,12 @@ $(function(){
         }
         $("#searchEnd").slideUp();
     });
+    oWs = new WebSocketConnect({wsUrl:"ws://103.66.33.67:443"});
+    offerWs = oWs.createWebSocket();
+
+    var secId = $("#tab li").eq(0).data("sectionid");
+    $(".zdf-list>h1").html( $("#tab li").eq(0).text());
+    initBlockInfo(secId);
 });
 // 查询板块
 function checkoutBlock(){
@@ -64,6 +71,7 @@ function checkoutBlock(){
                         SectionID:data[i].SectionID
                     });
                 }
+                // 板块类别
                 initTabBlock(jsonB);
             }
         },
@@ -81,19 +89,147 @@ function initTabBlock(jsonB){
         }
     );
 }
+function initBlockInfo(secId){
+    var options = {
+        offerHeader:{
+            "msgtype":"Q3301",
+            "sectionId": secId,
+            "startIndex": 0,
+            "count": 10,
+            "field": 0,
+            "orderType": 0
+        }
+    };
+    connectEvent(options);
+}
+// 连接websocket
+function connectEvent(opt){
+    var offerHeader = opt.offerHeader;
+    offerWs.onclose = function () {
+        oWs.reconnect(); //终端重连
+    };
+    offerWs.onerror = function () {
+        oWs.reconnect(); //报错重连
+    };
+    offerWs.onopen = function () {
+        //心跳检测重置
+        oWs.reset().start(); //都第一次建立连接则启动心跳包
+        oWs.request(offerHeader);
+    };
+    offerWs.onmessage = function (evt) {
+        var data  = evt.data.split("|")[0];  //每个json包结束都带有一个| 所以分割最后一个为空
+        data = eval( "(" + data + ")" );
+        data = data || data[0];
+        var MsgType =  data["MsgType"] || data[0]["MsgType"]; //暂时用他来区分推送还是历史数据 如果存在是历史数据,否则推送行情
+        switch(MsgType)
+        {
+            case "R3301":
+                fillOfferForm(data);
+                break;
+            default:
+            break;
+        }
+        oWs.reset().start();
+    };
+}
+// 填充表单
+function fillOfferForm(data){
+    var strHtml = '';
+    for(var i in data.QueryRes){
+        strHtml += '<li class="zdf-list-one zdf-list-detail"><ul class="clearfix">'+
+                    '<li>'+(i+1)+'</li><li>'+data.QueryRes[i].InstrumentID+'</li>'+
+                    '<li>N纵横</li>'+
+                    '<li>'+data.QueryRes[i].Value+'<i></i></li>'+
+                    '<li>6.68%<i></i></li>'+
+                    '<li>44.01%<i></i></li>'+
+                    '<li>'+data.QueryRes[i].OpenPx+'<i></i></li>'+
+                    '<li>'+data.QueryRes[i].HighPx+'<i></i></li>'+
+                    '<li>'+data.QueryRes[i].LowPx+'<i></i></li>'+
+                    '<li>21.86<i></i></li>'+
+                    '<li>21.86<i></i></li>'+
+                    '<li>21.86<i></i></li>'+
+                    '<li>21.86<i></i></li>'+
+                    '<li>'+data.QueryRes[i].Volume+'<i></i></li>'+
+                    '<li>'+data.QueryRes[i].TradeNum+'<i></i></li>'+
+                    '</ul></li>';
+    }
+    $("#offerForm").html(strHtml);
+}
+// 建立数据连接 websocket  
+var WebSocketConnect = function(options) {
+    this.ws = null;
+    var lockReconnect = false;//避免重复连接 连接锁如果有正在连接的则锁住
+    wsUrl = options.wsUrl;  //开发
+    var timeout = 60000,//60秒
+        timeoutObj = null,
+        serverTimeoutObj = null;
+    var _target = this;
+    var XTB = {
+        "MsgType":"Q8050",
+        "ExchangeID":ExchangeID,
+        "InstrumentID":ZSId
+    };
+    //建立socket连接
+    WebSocketConnect.prototype.createWebSocket = function () {
+        try {
+            this.ws = new WebSocket(wsUrl);
+            return this.ws;
+        } catch (e) {
+            this.reconnect(wsUrl); //如果失败重连
+        }
+    };
+    // 关闭连接
+    WebSocketConnect.prototype.closeWebSocket = function(){
+        this.ws.close();
+    };
+    //socket重连
+    WebSocketConnect.prototype.reconnect = function () {
+        if (lockReconnect) return;
+        lockReconnect = true;
+        //没连接上会一直重连，设置延迟避免请求过多
+        setTimeout(function () {
+            offerWs = _target.createWebSocket(wsUrl);
+            connectEvent(options);
+            lockReconnect = false;
+        }, 2000);
+    };
+    //发送请求
+    WebSocketConnect.prototype.request = function (data) {
+        this.ws.send(JSON.stringify(data));
+    };
+    //重置心跳包
+    WebSocketConnect.prototype.reset = function () {
+        clearTimeout(this.timeoutObj);
+        clearTimeout(this.serverTimeoutObj);
+        return this;
+    };
+    //开始心跳包
+    WebSocketConnect.prototype.start = function () {
+        var self = this;
+        this.timeoutObj = setTimeout(function () {
+            //onmessage拿到返回数据就说明连接正常
+            self.request(XTB);
+            self.serverTimeoutObj = setTimeout(function () {//如果超过一定时间还没重置，说明后端主动断开了
+                self.ws.close();//如果onclose会执行reconnect，我们执行ws.close()就行了.如果直接执行reconnect 会触发onclose导致重连两次
+            }, timeout);
+        }, timeout);
+    };
+};
 ;(function($,window,document,undefined){
     $.fn.initMline = function(options,params){
-        var socket = null;
+        var socket;
+        if(socket){
+            socket.closeWebSocket();
+        }
         options = $.extend({},options,$.fn.initMline.defaults);
         $this = $(this);
         elementId = $this.attr("id");
         ZSId = options.id;
         ExchangeID = options.exchangeID;
         var xmlData;
-
         $("#"+elementId).parents(".market-main-chart").siblings(".market-chart-title").text(options.stockName+"("+options.stockCode+")");
         $(".market-chart-decs").html("<i>-</i><i>-</i><i>-</i>");
-        socket = new WebSocketConnect();
+        socket = new WebSocketConnect(options);
         var ws = socket.createWebSocket();
         //第一次打开终端,初始化代码表第一次默认请求
         $.ajax({
@@ -126,8 +262,7 @@ function initTabBlock(jsonB){
                     console.log("请求码表出错");
                 }
             }
-        }); 
-        
+        });
     };
     var InitMlineCharts = function(opt){
         this.myChart = null;
@@ -162,7 +297,6 @@ function initTabBlock(jsonB){
             // 获取昨收值
             ZCData:{
                 "MsgType":"S1010",
-                // "DesscriptionType":"3",
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "Instrumenttype":"1"
@@ -170,7 +304,6 @@ function initTabBlock(jsonB){
             // 订阅实时推送
             DYData:{
                 "MsgType":"S1010",
-                // "DesscriptionType":"3",
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "Instrumenttype":"11"
@@ -178,7 +311,6 @@ function initTabBlock(jsonB){
             // 清盘
             QPDATA:{
                 "MsgType":"Q8002",
-                // "DesscriptionType":"3",
                 "ExchangeID":opt.exchangeID,
                 "InstrumentID":opt.id,
                 "PructType":"0"
@@ -329,8 +461,8 @@ function initTabBlock(jsonB){
         var yc = parseFloat($this.yc);//昨收
         var decimal = $this.oneZSInfo[0].decimal;//保留的小数位数
         var sub = $this.oneZSInfo[0].sub;//是否跨天交易  -1为跨天 0未跨天
-        var limitUp = (yc + yc*0.1).toFixed($this.decimal);
-        var limitDown = (yc - yc*0.1).toFixed($this.decimal);
+        var limitUp = Number((yc + yc*0.1).toFixed($this.decimal));
+        var limitDown = Number((yc - yc*0.1).toFixed($this.decimal));
 
         if(type == "add"){
             if(!$this.myChart){
@@ -454,14 +586,14 @@ function initTabBlock(jsonB){
                     var dateStamp = dateToStamp(formatDate(data[j].Date) +" "+formatTime(data[j].Time));
                     if($this.c_data[i] == dateStamp){
                         var fvalue = parseFloat(data[j].Price);//价格
-                        if(data[j].Price >= limitUp){
+                        if(fvalue >= limitUp){
                             price[i] = limitUp;
                             zdfData[i] = 0.10;
-                        }else if(data[j].Price <= limitDown){
+                        }else if(fvalue <= limitDown){
                             price[i] = limitDown;
                             zdfData[i] = 0.10;
                         }else{
-                            price[i] = data[j].Price;
+                            price[i] = fvalue;
                             zdfData[i] = (((fvalue-yc)/yc)* 100).toFixed(2);
                         }
                         
@@ -578,7 +710,7 @@ function initTabBlock(jsonB){
                             }
                         },
                         formatter: function (value, number) {
-                            var tVal = value.split(" ")[3];
+                            var tVal = value.split(" ")[2];
                             if(startTime1 && value.indexOf(endTime)>-1){
                                 if(startTime1 == "13:01"){
                                     tVal = tVal+"/"+"13:00";
@@ -705,14 +837,12 @@ function initTabBlock(jsonB){
             // $("#"+$this.elementId).parents(".market-main-chart").siblings(".market-chart-title").text($this.stockName+"("+$this.stockCode+")");
         }
     }
-
     // 获取X轴的数值
     function getxAxis(todayDateStr,$this){
         var beginTime,finishTime,beginTime1,finishTime1;
         //2、判断是开始时间是否大于结束时间，大于的话就要取前一天，小于的话按照正常的来 
         var b_time1,b_time2;  // 停盘时间
         var todayDate = formatDate(todayDateStr);
-        // console.log($this.oneZSInfo);
         if($this.oneZSInfo[0].sub > -1){ //未跨天的时间计算  1-中间有断开  2-中间未断开
             if($this.oneZSInfo.length > 1){
                 beginTime = todayDate + " " + $this.oneZSInfo[0].startTime;
@@ -801,7 +931,7 @@ function initTabBlock(jsonB){
             startTime = (dataXML.time.split(";")[0]).split("-")[0];
             endTime = (dataXML.time.split(";")[0]).split("-")[1];
             startTime1 = (dataXML.time.split(";")[1]).split("-")[0];
-            endTime1 = (dataXML.time.split(";")[1]).split("-")[1];
+            endTime1 = formatTimeMin(dataXML.time.split(";")[1].split("-")[1]);
             startTime1  = startTime1.split(":")[0] +":"+ parseInt(startTime1.split(":")[1])+1;
         }else{//无分段时间
             startTime = dataXML.time.split("-")[0];
@@ -853,7 +983,7 @@ function initTabBlock(jsonB){
         return ZSInfo;
     }
     // 建立数据连接 websocket  
-    var WebSocketConnect = function() {
+    var WebSocketConnect = function(options) {
         this.ws = null;
         var lockReconnect = false;//避免重复连接 连接锁如果有正在连接的则锁住
         wsUrl = wsUrlDevelop;  //开发
@@ -874,6 +1004,10 @@ function initTabBlock(jsonB){
             } catch (e) {
                 this.reconnect(wsUrl); //如果失败重连
             }
+        };
+        // 关闭连接
+        WebSocketConnect.prototype.closeWebSocket = function(){
+            this.ws.close();
         };
         //socket重连
         WebSocketConnect.prototype.reconnect = function () {
@@ -904,7 +1038,7 @@ function initTabBlock(jsonB){
                 //onmessage拿到返回数据就说明连接正常
                 self.request(XTB);
                 self.serverTimeoutObj = setTimeout(function () {//如果超过一定时间还没重置，说明后端主动断开了
-                    self.ws.close();//如果onclose会执行reconnect，我们执行ws.close()就行了.如果直接执行reconnect 会触发onclose导致重连两次
+                    this.ws.close();//如果onclose会执行reconnect，我们执行ws.close()就行了.如果直接执行reconnect 会触发onclose导致重连两次
                 }, timeout);
             }, timeout);
         };
@@ -913,6 +1047,17 @@ function initTabBlock(jsonB){
 // 点击切换处理
 function tabLi(index){
     var el = $(".mc-tab-li ul li").eq(index);
+    $(".zdf-list>h1").html($(el).text());
+    
+    // 关闭报价表连接
+    oWs.closeWebSocket();
+    // 再次连接报价表
+    oWs = new WebSocketConnect({wsUrl:"ws://103.66.33.67:443"});
+    offerWs = oWs.createWebSocket();
+    
+    var secId = $(el).data("sectionid");
+    initBlockInfo(secId);
+
     switch($(el).data("sectionid")){
         case 1:
         $("#main1").initMline(
@@ -1073,7 +1218,6 @@ function tabLi(index){
         default:
         break;
     }
-    
 }
 // 搜索功能
 $("#searchInput").on("keyup",function(e){
@@ -1112,12 +1256,12 @@ function search(value){
                 var htmlStr = '<tr class="stockTitle"><th>选项</th><th>类型</th><th>代码</th><th>中文名称</th></tr>';
                 var ds,dr;
                 data = data.CodeInfo;
-                for(let i=0;i<data.length;i++){
+                for(var i=0;i<data.length;i++){
                     htmlStr += '<tr class="stocklist" data-exchangeID='+data[i].ExchangeID+' data-instrumentID='+(data[i].InstrumentCode)+'>';
                     ds = data[i].InstrumentCode.split(value);
                     // 选项
                     htmlStr += '<td><a>';
-                    for(let j=0;j<ds.length;j++){
+                    for(var j=0;j<ds.length;j++){
                         htmlStr += ds[j]+(j==ds.length-1?'':'<span class="highlight">'+value+'</span>');
                     }
                     htmlStr += '</a></td>';

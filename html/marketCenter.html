@@ -4,6 +4,10 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
+        <META HTTP-EQUIV="pragma" CONTENT="no-cache"> 
+        <META HTTP-EQUIV="Cache-Control" CONTENT="no-cache, must-revalidate"> 
+        <META HTTP-EQUIV="expires" CONTENT="0">
         <title>行情中心</title>
         <link rel="stylesheet" type="text/css" href="../css/marketCenter.css" />
     </head>
@@ -30,7 +34,9 @@
                     <span class="market-chart-decs"><i>-</i><i>-</i><i>-</i></span>
                     <div class="market-main-chart">
                         <a href="">
-                            <div class="charts" id="main1" style="height:242px;">暂无数据</div>
+                            <div class="charts" id="main1" style="height:242px;">
+                                <img src="../img/progress.gif" />
+                            </div>
                         </a>
                     </div>
                 </div>
@@ -39,7 +45,9 @@
                     <span class="market-chart-decs"><i>-</i><i>-</i><i>-</i></span>
                     <div class="market-main-chart">
                         <a href="">
-                            <div class="charts" id="main2" style="height:242px;">暂无数据</div>
+                            <div class="charts" id="main2" style="height:242px;">
+                                <img src="../img/progress.gif" />
+                            </div>
                         </a>
                     </div>
                 </div>
@@ -48,7 +56,9 @@
                     <span class="market-chart-decs"><i>-</i><i>-</i><i>-</i></span>
                     <div class="market-main-chart">
                         <a href="">
-                            <div class="charts" id="main3" style="height:242px;">暂无数据</div>
+                            <div class="charts" id="main3" style="height:242px;">
+                                <img src="../img/progress.gif"/>
+                            </div>
                         </a>
                     </div>
                 </div>
@@ -57,26 +67,26 @@
         <div class="wrap">
             <div class="zdf-list">
                 <h1>沪深A涨跌幅</h1>
-                <ul class="clearfix">
-                    <li class="zdf-list-one">
-                        <ul class="clearfix zdf-list-title">
-                            <li>序号</li>
-                            <li>代码</li>
-                            <li>名称</li>
-                            <li><a href="javascript:void(0);">现价<i></i></a></li>
-                            <li><a href="javascript:void(0);">涨跌<i></i></a></li>
-                            <li><a href="javascript:void(0);">涨幅<i></i></a></li>
-                            <li><a href="javascript:void(0);">今开<i></i></a></li>
-                            <li><a href="javascript:void(0);">最高<i></i></a></li>
-                            <li><a href="javascript:void(0);">最低<i></i></a></li>
-                            <li><a href="javascript:void(0);">昨收<i></i></a></li>
-                            <li><a href="javascript:void(0);">换手<i></i></a></li>
-                            <li><a href="javascript:void(0);">量比<i></i></a></li>
-                            <li><a href="javascript:void(0);">振幅<i></i></a></li>
-                            <li><a href="javascript:void(0);">成交量<i></i></a></li>
-                            <li><a href="javascript:void(0);">成交额<i></i></a></li>
-                        </ul>
-                    </li>
+                <div class="zdf-list-one">
+                    <ul class="clearfix zdf-list-title">
+                        <li>序号</li>
+                        <li>代码</li>
+                        <li>名称</li>
+                        <li><a href="javascript:void(0);">现价<i></i></a></li>
+                        <li><a href="javascript:void(0);">涨跌<i></i></a></li>
+                        <li><a href="javascript:void(0);">涨幅<i></i></a></li>
+                        <li><a href="javascript:void(0);">今开<i></i></a></li>
+                        <li><a href="javascript:void(0);">最高<i></i></a></li>
+                        <li><a href="javascript:void(0);">最低<i></i></a></li>
+                        <li><a href="javascript:void(0);">昨收<i></i></a></li>
+                        <li><a href="javascript:void(0);">换手<i></i></a></li>
+                        <li><a href="javascript:void(0);">量比<i></i></a></li>
+                        <li><a href="javascript:void(0);">振幅<i></i></a></li>
+                        <li><a href="javascript:void(0);">成交量<i></i></a></li>
+                        <li><a href="javascript:void(0);">成交额<i></i></a></li>
+                    </ul>
+                </div>
+                <ul class="clearfix" id="offerForm">
                     <!-- <li class="zdf-list-one zdf-list-detail">
                         <ul class="clearfix">
                             <li>1</li>
