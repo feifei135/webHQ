@@ -27,6 +27,11 @@ li{
 h1,h2{
     font-weight: normal;
 }
+img{
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
 .fl{
     float: left;
 }
@@ -42,6 +47,11 @@ h1,h2{
     display: block;
     visibility: visible;
     clear: both;
+}
+table, tr, td, th {
+    margin: 0;
+    border: 0;
+    padding: 0;
 }
 body{
     font-family: 'Microsoft YaHei',Arial,'微软雅黑','宋体';
@@ -203,12 +213,15 @@ body{
 }
 .market-chart-decs>i:first-child{
     font-size: 24px;
-    /* color: #e22f2a; */
 }
 .market-main-chart{
     padding-right: 40px;
+    text-align: center;
+    line-height: 242px;
 }
-
+.market-main-chart>a{
+    color: #333;
+}
 /* 涨跌幅列表 */
 .zdf-list{
     padding: 40px;
@@ -281,4 +294,48 @@ body{
     width: 100px; 
     display: inline-block;
     text-align: center;
+}
+/* 搜索功能 */
+.search{
+    position: absolute;
+    top: 62px;
+    width: 100%;
+    display: none;
+    border-width: 0 1px 1px 1px;
+    border-color: #cacaca;
+    background-color: #F3F3F3;
+    border-style: solid;
+    padding: 5px 0 10px 0;
+    z-index: 100;
+}
+.search>table{
+    border-collapse: collapse;
+    line-height: 18px;
+    /* border: 2px solid #EEE; */
+    background-color: #FFF;
+    font-size: 12px;
+    text-align: center;
+    color: #999;
+    width: 100%;
+    border-bottom: none;
+}
+.stocklist{
+    cursor: pointer;
+}
+.stocklist:hover{
+    background-color: rgb(241, 245, 223);
+}
+.stocklist_active{
+    background-color: rgb(241, 245, 223);
+}
+.stocklist>td>a{
+    color: #999;
+    display: inline-block;
+    outline: none;
+    padding: 1px;
+    text-decoration: none;
+    width: 100%;
+}
+.highlight{
+    color: #f00;
 }

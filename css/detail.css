@@ -469,7 +469,11 @@ ul{
 	width: 50px;
 	width: 100%;
 	text-align: right;
+<<<<<<< HEAD
 	font-size: 12px;
+=======
+	font-size: 14px;
+>>>>>>> c9ac2e680ef7fa4cba0d646fdf436cf241fe9851
 	text-align: right;
 	color: #000;
 }

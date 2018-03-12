@@ -1,0 +1,12 @@
+code=1600000&yc=12.87&datatime=1507598320219&name=%E6%B5%A6%E5%8F%91%E9%93%B6%E8%A1%8C
+
+vpn服务器地址：https://114.247.108.248
+
+web socket请求地址：ws://172.17.20.203:7681
+		    ws://103.66.33.31:443
+
+账号密码：luowx@cssweb.com.cn  153847zhang
+
+xml地址：http://172.17.20.203:6789/101
+
+另一个  账号密码：dusen@cssweb.com.cn   123456a

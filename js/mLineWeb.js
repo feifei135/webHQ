@@ -1,6 +1,4 @@
-var yc=0,xml,decimal=2,tFlag=false;
-var stockType = '';
-var todayDate;//通过xml查询得到的当前日期
+var yc=0,xml,decimal=2;
 ;(function($,undefined){
     var socket = null;
     var myChart = null;
@@ -195,7 +193,6 @@ var todayDate;//通过xml查询得到的当前日期
                 if(data.ReturnCode == 0){
                     data = data.CodeInfo[0];
                     // 从代码表中获取昨收值
-                    setStockInfo(data);
                     yc = data.PreClose?parseFloat(data.PreClose):0;
                     compareTime(data,_options);
                     socket = new WebSocketConnect(_options);
@@ -208,13 +205,17 @@ var todayDate;//通过xml查询得到的当前日期
         });
     };
     function setStockInfo(_codeList){
+        var codeInfo = _codeList;
         //指数[0~8],股票[16~31]
-        if(_codeList.ProductType>=0&&_codeList.ProductType<=8){
-            stockType = "Field";
+        if(codeInfo.ProductType>=0&&codeInfo.ProductType<=8){
+            KLineSocket.StockInfo.stockType = "Field";
         }
-        if(_codeList.ProductType>=16&&_codeList.ProductType<=31){
-            stockType = "Stock";
+        if(codeInfo.ProductType>=16&&codeInfo.ProductType<=31){
+            KLineSocket.StockInfo.stockType = "Stock";
         }
+        // 股票代码
+        KLineSocket.StockInfo.Code = codeInfo.InstrumentCode;
+        $(".tb-fn-title").text(KLineSocket.StockInfo.Name+"("+KLineSocket.StockInfo.Code+")");
     }
     
     //1、用id判断出是哪个指数，获取其开始时间和结束时间、保留小数位
@@ -303,6 +304,7 @@ var todayDate;//通过xml查询得到的当前日期
                 break;
                 default:;
             }
+            
             //初始化报价图;
             // if(!$(".shibors").find("#mytable").length>0){
             //     $(".shibors").marketTable("init");
@@ -320,87 +322,31 @@ var todayDate;//通过xml查询得到的当前日期
             switch(MsgType)
             {
                 case "R3011"://订阅历史数据
-                    if(data.ErrorCode=="9999" || data.ExchangeID != $this.options.exchangeID || data.InstrumentID != $this.options.id){
-                        return;
-                    }
                     initCharts(data,'',$this);
                     break;
                 case "P0001"://订阅快照
-                    if(data.ErrorCode=="9999"){
-                        $("#main1").html("暂无数据");
-                        return;
-                    }
-                    if(data.ExchangeID != $this.options.exchangeID || data.InstrumentID != $this.options.id){
-                        return;
-                    }
                     setFieldInfo(data);
                     if(!yc){
-                        yc = parseFloat(data.PreClose).toFixed($this.options.decimal); //获取昨收值
-                        var dateT = data.Date;
-                        $this.v_data = getxAxis(dateT,$this.options);
-                        initYCCharts(yc,$this);
-                        if(parseFloat(data.Time) > 93015){
-                            tFlag = true;
-                        }
-                        if(tFlag){
-                            todayDate = -1;
-                        }else{
-                            todayDate = parseInt(data.Date)-1;
-                        }
-                        var tradingHistoryData={
-                            "MsgType":"Q3032",
-                            "ExchangeID":$this.options.exchangeID,
-                            "InstrumentID":$this.options.id,
-                            "PructType":$this.options.typeIndex.toString(),
-                            "StartIndex":"-1",
-                            "StartDate":todayDate.toString(),
-                            "Count":(stockType == "Field"?"10":"5")
-                        };
-                        socket.request(tradingHistoryData);
+                        yc = data.PreClose; //获取昨收值
                         return;
                     }
-                     // 历史成交记录
                 break;
                 case "P0011"://订阅分钟线
-                    if(data.ErrorCode=="9999"){
-                        return;
-                    }
-                    if(data.ExchangeID != $this.options.exchangeID || data.InstrumentID != $this.options.id){
-                        return;
-                    }
                     if(myChart != undefined){
                         initCharts(data,"add",$this);
                     }
                 break;
                 case "R8002"://清盘
-                    if(data.ErrorCode=="9999"){
-                        return;
-                    }
-                    if(data.ExchangeID != $this.options.exchangeID || data.InstrumentID != $this.options.id){
-                        return;
-                    }
                     var MarketStatus = data["MarketStatus"] || data[0]["MarketStatus"];
                     if(MarketStatus == 1){//收到清盘指令  操作图表
                         redrawChart(data,$this);
                     }
                 break;
                 case "P0002":    //五档盘口
-                    if(data.ErrorCode=="9999"){
-                        return;
-                    }
-                    if(data.ExchangeID != $this.options.exchangeID || data.InstrumentID != $this.options.id){
-                        return;
-                    }
                     // if(!data || data.) return
                     setfillPK(data);
-                    break;
-                    case "P0003":    //五档盘口扩展-内外盘-委比委差等
-                    if(data.ErrorCode=="9999"){
-                        return;
-                    }
-                    if(data.ExchangeID != $this.options.exchangeID || data.InstrumentID != $this.options.id){
-                        return;
-                    }
+                break;
+                case "P0003":    //五档盘口扩展-内外盘-委比委差等
                     switch($this.options.stockType){
                         case "Field":
                             setfillPKExtZS(data);
@@ -412,27 +358,9 @@ var todayDate;//通过xml查询得到的当前日期
                     }
                     break;
                 case "P0032":    //逐笔成交
-                    if(data.ErrorCode=="9999"){
-                        return;
-                    }
-                    if(data.ExchangeID != $this.options.exchangeID || data.InstrumentID != $this.options.id){
-                        return;
-                    }
-                    tFlag = true;
                     setfillZBCJ(data,$this);
                     break;
-                    case "R3032"://逐笔成交历史记录
-                    if(data.ErrorCode=="9999"){
-                        return;
-                    }
-                    if(data.ExchangeID != $this.options.exchangeID || data.InstrumentID != $this.options.id){
-                        return;
-                    }
-                    if(!data.TradeRecordInfo || data.TradeRecordInfo.length<=0) return;
-                    fillTrading(data.TradeRecordInfo,$this);
-                    break;
-                    case "R8050":  //心跳包
-                    console.log(data)
+                case "R8050":  //心跳包
                     // console.log(data);
                 default:
             }
@@ -479,444 +407,6 @@ var todayDate;//通过xml查询得到的当前日期
     InitXMLIChart.prototype.getWatchZBCJ = function(){
         socket.request(this.options.watchZBCJ);
     };
-    function initYCCharts(yc,$this){
-        var maxY = parseFloat((parseFloat(yc)*0.01+parseFloat(yc)).toFixed($this.options.decimal));
-        var minY = parseFloat((parseFloat(yc)-parseFloat(yc)*0.01).toFixed($this.options.decimal));
-        var maxY1 = parseFloat((maxY/yc).toFixed(2));
-        var minY1 = -parseFloat((minY/yc).toFixed(2));
-        var split = parseFloat(((maxY - yc)/3).toFixed($this.options.decimal));
-        var split1= parseFloat((split / yc))*100;
-        var option = {
-            backgroundColor: "#fff",
-            animation: false,
-            grid: [
-                {
-                    top: "5%",
-                    height: '70%',
-                    show:true
-                },
-                {
-                    top: '85%',
-                    height: '13%',
-                },
-                // {
-                //     bottom:'-100%',
-                //     height:'10%',
-                // }
-            ],
-            title: {
-                show: false
-            },
-            axisPointer: {
-                link: {xAxisIndex: 'all'},
-                label: {
-                    backgroundColor: colorList[2]
-                },
-                lineStyle:{
-                    color:colorList[2],
-                    type:"dotted",
-                    width:1
-                },
-                type:'line',
-                show:true,
-                triggerTooltip:false
-            },
-            tooltip: {
-                trigger: 'axis',
-                showContent:false
-            },
-            xAxis: [
-                {
-                    type:"category",
-                    axisTick: {
-                        show:false
-                    },
-                    axisLabel: {
-                        show:true,
-                        interval: function (number, string) {
-                            if(number == 0 || number == $this.v_data.length-1){
-                                return true;
-                            }
-                            if(stopTime){
-                                if(string.indexOf(stopTime[0].split(" ")[1])>-1){
-                                    return true
-                                }
-                            }
-                            if(string.indexOf("00")>-1){
-                                return true
-                            }
-
-                        },
-                        formatter: function (value, number) {
-                            var tVal = value.split(" ")[2];
-                            return tVal;
-                        },
-                        textStyle: {
-                            color: colorList[3]
-                        }
-                    },
-                    axisLine: {
-                        lineStyle:{
-                            color:colorList[4]
-                        }
-                    },
-                    data: $this.v_data,
-                    splitLine: {
-                        show: true
-                    },
-                    axisPointer: {
-                        show:true,
-                        label: {
-                            formatter: function (params, value, s) {
-                                return (params.value);
-                                // return moment(parseFloat(params.value)).format("YYYY-MM-DD HH:mm");
-                            },
-                            padding:[3,5,5,5],
-                            show:true
-                        }
-                    },
-                    boundaryGap:false
-                },
-                {
-                    type:"category",
-                    name:"万",
-                    nameLocation:'start',
-                    nameTextStyle:{
-                        color:colorList[2]
-                    },
-                    axisTick: {
-                        interval: function (number, string) {
-                            if($this.typeIndex == "128" || $this.typeIndex == "224"){
-                                if (number % 180 == 0) {
-                                    return true;
-                                } else {
-                                    return false;
-                                }
-                            }else{
-                                if (number % 30 == 0) {
-                                    return true;
-                                } else {
-                                    return false;
-                                }
-                            }
-                        },
-                        show:false
-                    },
-                    axisLabel: {
-                        show:false,
-                        interval: function (number, string) {
-                            if($this.typeIndex == "128" || $this.typeIndex == "224"){
-                                if (number % 180 == 0) {
-                                    return true;
-                                } else {
-                                    return false;
-                                }
-                            }else{
-                                if (number % 30 == 0) {
-                                    return true;
-                                } else {
-                                    return false;
-                                }
-                            }
-                        },
-                        formatter: function (value, number) {
-                            return value.split(" ")[3];
-                        },
-                        textStyle: {
-                            color: colorList[3]
-                        }
-                    },
-                    axisLine: {
-                        lineStyle:{
-                            color:colorList[4]
-                        }
-                    },
-                    data: $this.v_data,
-                    splitLine: {
-                        show: false
-                    },
-                    gridIndex: 1,
-                    boundaryGap:false
-                },
-            ],
-            yAxis: [
-                {
-                    min: minY,
-                    max: maxY,
-                    interval: split,
-                    boundaryGap: [0, '100%'],
-                    axisTick: {
-                        show: false
-                    },
-                    type: "value",
-                    splitLine:{
-                        lineStyle:{
-                            color:"transparent"
-                        }
-                    },
-                    axisLine:{
-                        lineStyle:{
-                            color:colorList[4]
-                        }
-                    },
-                    axisLabel: {
-                        formatter: function (value, index) {
-                            if (index == 3) {
-                                return "";
-                            } else {
-                                return parseFloat(value).toFixed($this.options.decimal);
-                            }
-                        },
-                        textStyle: {
-                            color: function (value, index) {
-                                if (parseFloat(value) > parseFloat(yc)) {
-                                    return colorList[0];
-                                } else {
-                                    return colorList[1];
-                                }
-                            }
-                        }
-                    },
-                    axisPointer: {
-                        label: {
-                            formatter: function (params, value, s) {
-                                return parseFloat(params.value).toFixed($this.options.decimal);
-                            }
-                        }
-                    }
-                },
-                {
-                    min: minY1,
-                    max: maxY1,
-                    interval: split1,
-                    name:"涨跌幅",
-                    boundaryGap: [0, '100%'],
-                    axisTick: {
-                        show: false
-                    },
-                    type: "value",
-                    splitLine:{
-                        lineStyle:{
-                            color:"transparent"
-                        }
-                    },
-                    axisLine:{
-                        lineStyle:{
-                            color:colorList[4]
-                        }
-                    },
-                    axisLabel: {
-                        formatter: function (value, index) {
-                            if (index == 3) {
-                                return "";
-                            } else {
-                                return parseFloat(value).toFixed(2) + "%";
-                            }
-                        },
-                        textStyle: {
-                            color: function (value, index) {
-                                if (parseFloat(value) > 0) {
-                                    return colorList[0];
-                                } else {
-                                    return colorList[1];
-                                }
-                            }
-                        }
-                    },
-                    axisPointer: {
-                        label: {
-                            formatter: function (params, value, s) {
-                                return parseFloat(params.value) + "%";
-                            }
-                        }
-                    }
-                },
-                {
-                    type:'value',
-                    name:'成交',
-                    nameLocation:'end',
-                    nameTextStyle:{
-                        color:colorList[2],
-                        fontSize:14
-                    },
-                    nameGap:10,
-                    scale: true,
-                    splitLine:{
-                        lineStyle:{
-                            color:colorList[4]
-                        }
-                    },
-                    axisLine:{
-                        lineStyle:{
-                            color:colorList[4]
-                        }
-                    },
-                    axisLabel:{
-                        formatter:function(value,index){
-                            setyAsixName(value/100);
-                            return;
-                        },
-                        textStyle:{
-                            color:colorList[3],
-                            fontSize:14,
-                        },
-                        showMinLabel:true,
-                        showMaxLabel:true,
-                    },
-                    gridIndex: 1,
-                    splitNumber: 2
-                }
-            ],
-            series: [
-                {
-                    name: 'Mline',
-                    type: 'line',
-                    showSymbol: false,
-                    hoverAnimation: false,
-                    data: "",
-                    connectNulls:true,
-                    symbolSize:0,
-                    markLine: {
-                        animation:false,
-                        silent:true,
-                        lineStyle: {
-                            normal: {
-                                type: 'dashed',
-                                color: colorList[2],
-                                width:1
-                            }
-                        },
-                        label: {
-                            normal: {
-                                position: "start",
-                                formatter: function (params) {
-                                    return params.value + " ";
-                                }
-                            }
-                        },
-                        data: [
-                            {
-                                name: 'Y 轴值为 100 的水平线',
-                                yAxis: yc
-                            }
-                        ],
-                        symbol: ['none', 'none']
-                    },
-                    lineStyle:{
-                        normal:{
-                            color:"#2b99ff",
-                            width:1
-                        }
-                    },
-                    areaStyle:{
-                        normal:{
-                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
-                                offset: 0,
-                                color: 'rgba(43, 153, 255,0.3)'
-                            }, {
-                                offset: 1,
-                                color: 'rgba(43, 153, 255,0.1)'
-                            }])
-                        }
-                    }
-                },
-                {
-                    name:'limit',
-                    type: 'line',
-                    showSymbol: false,
-                    hoverAnimation: false,
-                    connectNulls:true,
-                    symbolSize:0,
-                    markLine: {
-                        animation:false,
-                        silent:true,
-                        lineStyle: {
-                            normal: {
-                                type: 'dashed',
-                                color: colorList[2],
-                                width:0
-                            }
-                        },
-                        label: {
-                            normal: {
-                                position: "end",
-                                formatter: function (params) {
-                                    // return " " + params.value + ".00%";
-
-                                }
-                            }
-                        },
-                        data: [
-                            {
-                                name: 'Y 轴值为 100 的水平线',
-                                yAxis: 0.00
-                            }
-                        ],
-                        symbol: ['none', 'none']
-                    },
-                    lineStyle: {
-                        normal: {
-                            color: "#2b99ff",
-                            opacity:0
-                        }
-                    },
-                    data: "",
-                    yAxisIndex: 1
-                },
-                {
-                    name: 'Vol',
-                    type: 'bar',
-                    xAxisIndex: 1,
-                    yAxisIndex: 2,
-                    data: "",
-                    itemStyle:{
-                        normal:{
-                            color:function(params){
-                                if(flag[params.dataIndex] > 0){
-                                    return colorList[0];
-                                }else{
-                                    return colorList[1];
-                                }
-                            }
-                        }
-                    }
-                },
-                // {
-                //     name:'量比',
-                //     type:'line',
-                //     smooth:true,
-                //     symbol: 'none',
-                //     showSymbol: false,
-                //     hoverAnimation: false,
-                //     connectNulls:true,
-                //     symbol:'circle',
-                //     symbolSize:0,
-                //     itemStyle: {
-                //         normal: {
-                //             color: colorList[0]
-                //         }
-                //     },
-                //     data: a_history_data,
-                //     xAxisIndex: 2,
-                //     yAxisIndex: 3
-                // }
-            ]
-        };
-        myChart = echarts.init(document.getElementById('main1'));
-        myChart.setOption(option);
-    }
-    // 查询历史信息
-    function fillTrading(data,$this){
-        var strHtml = '';
-        for(var i =0;i<data.length;i++){
-            var abside = "";
-            if(stockType != "Field"){
-                abside = (data[i].ABSide==83)?("<span class='green'>卖出</span>"):((data[i].ABSide==66)?("<span class='red'>买入</span>"):(data[i].ABSide==0)?("<span>平盘</span>"):"");
-            }
-            strHtml += '<li><span>'+formatTimeSec(data[i].Time)+'</span><span>'+parseFloat(data[i].RecorePrice).toFixed(2)+'</span><span>'+data[i].Volume+'</span>'+abside +'</li>';
-        }
-        $(".cb-cj ul").html(strHtml);
-    }
     // 设置顶部信息  当前指数/个股 请求快照数据
     function setFieldInfo(data){
         var high,low,open,zf,price,zd,zdf,dealVal,dealVol,preClose;
@@ -1084,11 +574,8 @@ var todayDate;//通过xml查询得到的当前日期
             return
         }
         // 数据处理
-        var absideStr = abside = "";
-        if(stockType != "Field"){
-            absideStr = (data.ABSide==83)?("卖出"):((data.ABSide==66)?("买入"):(data.ABSide==0)?("平盘"):"");
-            abside = (data.ABSide==83)?("<span class='green'>卖出</span>"):((data.ABSide==66)?("<span class='red'>买入</span>"):(data.ABSide==0)?("<span>平盘</span>"):"");
-        }
+        var absideStr = (data.ABSide==83)?("卖出"):((data.ABSide==66)?("买入"):(data.ABSide==0)?("平盘"):"");
+        var abside = (data.ABSide==83)?("<span class='green'>卖出</span>"):((data.ABSide==66)?("<span class='red'>买入</span>"):(data.ABSide==0)?("<span>平盘</span>"):"");
         
         var timeIsAlready = $this.options.time==formatTimeSec(data.Time),
             priceIsAlready = $this.options.price==(yc!=undefined?floatFixedDecimal(data.RecorePrice):floatFixedTwo(data.RecorePrice)),
@@ -1123,10 +610,11 @@ var todayDate;//通过xml查询得到的当前日期
     }
     //初始化分时图 
     function initCharts(data,type,$this){
-        $this.options.v_data=$this.v_data;
         $this = $this.options;
         if (data) {
+            // $("#noData").hide();
             $(".vol").show();
+            // $(".chartsTab").show();
             yc = parseFloat(yc);
             var limitUp = parseFloat((yc + yc*0.1).toFixed($this.decimal));
             var limitDown = parseFloat((yc - yc*0.1).toFixed($this.decimal));
@@ -1174,7 +662,7 @@ var todayDate;//通过xml查询得到的当前日期
                     var marktToolData = [
                         $this.history_data[$this.history_data.length - 1],
                         $this.z_history_data[$this.z_history_data.length - 1],
-                        $this.a_history_data[$this.a_history_data.length - 1],
+                        $this.a_history_data[$this.a_history_data.length - 1] / 100,
                         formatDate(parseFloat($this.c_data[$this.history_data.length - 1]),"0")
                     ];
                     set_marketTool(marktToolData,$this); //设置动态行情条
@@ -1290,13 +778,15 @@ var todayDate;//通过xml查询得到的当前日期
                     var volume = [];//成交量
                     var zdfData = [];//涨跌幅
                     var flag = [];//现价-开盘价 值为1和-1
+                    $this.v_data = getxAxis(data[0].Date,$this);
                     var lastDate = dateToStamp(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time));
-                    var unit="";
+
                     for(var i=0;i<$this.c_data.length;i++){
                         if(lastDate < $this.c_data[i]){
                             break;
                         }
                         for(var j=0;j<data.length;j++){
+                            // var dateStamp = moment(formatDate(data[j].Date) +" "+formatTime(data[j].Time)).utc().valueOf();
                             var dateStamp = dateToStamp(formatDate(data[j].Date) +" "+formatTime(data[j].Time));
                             if($this.c_data[i] == dateStamp){
                                 var fvalue = parseFloat(data[j].Price);//价格
@@ -1312,7 +802,6 @@ var todayDate;//通过xml查询得到的当前日期
                                 }
                                 
                                 volume[i] = data[j].Volume;
-                                
                                 flag[i] = (parseFloat(data[j].Price)-parseFloat(data[j].Open)) >= 0 ? 1 : -1;
                                 
                                 if(fvalue > 0){
@@ -1371,7 +860,6 @@ var todayDate;//通过xml查询得到的当前日期
                             {
                                 top: "5%",
                                 height: '70%',
-                                show:true
                             },
                             {
                                 top: '85%',
@@ -1403,40 +891,40 @@ var todayDate;//通过xml查询得到的当前日期
                             trigger: 'axis',
                             showContent:false
                         },
-                        dataZoom: [
-                            // {
-                            //     type: 'inside',
-                            //     xAxisIndex: [0, 1],
-                            //     start: 0,
-                            //     end: 100
-                            // },
-                            // {
-                            //     show: true,
-                            //     xAxisIndex: [0, 1],
-                            //     type: 'slider',
-                            //     bottom:'0',
-                            //     height:"40px",
-                            //     start: 0,
-                            //     end: 100,
-                            //     backgroundColor:"#fff",
-                            //     fillerColor:"rgba(0,0,0,0.2)",
-                            //     borderColor:"transparent",
-                            //     handleIcon:'path://M 100 100 L 300 100 L 300 700 L 100 700 z',
-                            //     handleStyle:{
-                            //         color:"#f2f2f2",
-                            //         borderColor:"#b4b4b4",
-                            //         borderWidth:1
-                            //     },
-                            //     textStyle:{
-                            //         color:colorList[3],
-                            //         fontSize:14
-                            //     },
-                            //     labelFormatter: function (value) {
-                            //         if(!value) return;
-                            //         return $this.v_data[value].split(" ")[3];
-                            //     }
-                            // }
-                        ],
+                        // dataZoom: [
+                        //     {
+                        //         type: 'inside',
+                        //         xAxisIndex: [0, 1],
+                        //         start: 0,
+                        //         end: 100
+                        //     },
+                        //     {
+                        //         show: true,
+                        //         xAxisIndex: [0, 1],
+                        //         type: 'slider',
+                        //         bottom:'0',
+                        //         height:"40px",
+                        //         start: 0,
+                        //         end: 100,
+                        //         backgroundColor:"#fff",
+                        //         fillerColor:"rgba(0,0,0,0.2)",
+                        //         borderColor:"transparent",
+                        //         handleIcon:'path://M 100 100 L 300 100 L 300 700 L 100 700 z',
+                        //         handleStyle:{
+                        //             color:"#f2f2f2",
+                        //             borderColor:"#b4b4b4",
+                        //             borderWidth:1
+                        //         },
+                        //         textStyle:{
+                        //             color:colorList[3],
+                        //             fontSize:14
+                        //         },
+                        //         labelFormatter: function (value) {
+                        //             if(!value) return;
+                        //             return $this.v_data[value].split(" ")[3];
+                        //         }
+                        //     }
+                        // ],
                         xAxis: [
                             {
                                 type:"category",
@@ -1445,6 +933,19 @@ var todayDate;//通过xml查询得到的当前日期
                                 },
                                 axisLabel: {
                                     interval: function (number, string) {
+                                        // if($this.typeIndex == "128" || $this.typeIndex == "224"){
+                                        //     if (number % 180 == 0) {
+                                        //         return true;
+                                        //     } else {
+                                        //         return false;
+                                        //     }
+                                        // }else{
+                                        //     if (number % 30 == 0) {
+                                        //         return true;
+                                        //     } else {
+                                        //         return false;
+                                        //     }
+                                        // }
                                         if(number == 0 || number == $this.v_data.length-1){
                                             return true;
                                         }
@@ -1473,7 +974,7 @@ var todayDate;//通过xml查询得到的当前日期
                                 },
                                 data: $this.v_data,
                                 splitLine: {
-                                    show: true
+                                    show: false
                                 },
                                 axisPointer: {
                                     show:true,
@@ -1490,7 +991,7 @@ var todayDate;//通过xml查询得到的当前日期
                             },
                             {
                                 type:"category",
-                                name:unit,
+                                name:'万',
                                 nameLocation:'start',
                                 nameTextStyle:{
                                     color:colorList[2]
@@ -1690,8 +1191,11 @@ var todayDate;//通过xml查询得到的当前日期
                                 },
                                 axisLabel:{
                                     formatter:function(value,index){
-                                        setyAsixName(value/100);
-                                        return;
+                                        if(value >= 10000){
+                                            return  (value/10000);
+                                        }else{
+                                            return value;
+                                        }
                                     },
                                     textStyle:{
                                         color:colorList[3],
@@ -1702,7 +1206,31 @@ var todayDate;//通过xml查询得到的当前日期
                                 },
                                 gridIndex: 1,
                                 splitNumber: 2
-                            }
+                            },
+                            // {
+                            //     name:'量比',
+                            //     nameLocation:'end',
+                            //     nameTextStyle:{
+                            //         color:colorList[2],
+                            //         fontSize:14
+                            //     },
+                            //     nameGap:0,
+                            //     axisLine:{
+                            //         show:false
+                            //     },
+                            //     axisTick:{
+                            //         show:false
+                            //     },
+                            //     axisLabel:{
+                            //         show:false
+                            //     },
+                            //     type:'value',
+                            //     boundaryGap: [0, '100%'],
+                            //     splitLine:{
+                            //         show:false
+                            //     },
+                            //     gridIndex: 2
+                            // }
                         ],
                         series: [
                             {
@@ -1839,14 +1367,15 @@ var todayDate;//通过xml查询得到的当前日期
                             // }
                         ]
                     };
-                    // myChart = echarts.init(document.getElementById('main1'));
+                    // $(".loading").hide();
+                    myChart = echarts.init(document.getElementById('main1'));
                     myChart.setOption(option);
                     count = myChart.getOption().series[0].data.length;
                     
                     var marktToolData = [
                         $this.history_data[count - 1], 
                         $this.z_history_data[count - 1], 
-                        $this.a_history_data[count - 1], 
+                        $this.a_history_data[count - 1] / 100, 
                         formatDate(parseFloat($this.c_data[count - 1]),"0")//moment(parseFloat($this.c_data[count - 1])).format("YYYY-MM-DD HH:mm")
                     ];
                     set_marketTool(marktToolData,$this); //设置动态行情条
@@ -1854,22 +1383,30 @@ var todayDate;//通过xml查询得到的当前日期
                     myChart.on('showTip', function (params) {
                         mouseHoverPoint = params.dataIndex;
                         $("#toolContent .dataTime").text(formatDate($this.c_data[mouseHoverPoint],"1"));
+                        // $("#toolContent_M").children().first().text(formatDate($this.c_data[mouseHoverPoint],"0"));
                         if ($this.history_data[mouseHoverPoint]) {
+                            // $("#toolContent_M").children().first().text(formatDate(parseFloat($this.c_data[mouseHoverPoint]),"0"));//moment(parseFloat($this.c_data[mouseHoverPoint])).format("YYYY-MM-DD HH:mm"));
                             if($this.history_data[mouseHoverPoint] >= yc){
+                                // $("#toolContent_M").children().eq(1).text($this.history_data[mouseHoverPoint]).css("color",colorList[0]);
+                                // $("#toolContent_M").children().eq(3).text($this.z_history_data[mouseHoverPoint]).css("color",colorList[0]);
                                 // 浮窗数据
                                 $(".dataPrice").text($this.history_data[mouseHoverPoint]).css("color",colorList[0]);
                                 $(".change").text($this.z_history_data[mouseHoverPoint]+"%").css("color",colorList[0]);
                             }else{
+                                // $("#toolContent_M").children().eq(1).text($this.history_data[mouseHoverPoint]).css("color",colorList[1]);
+                                // $("#toolContent_M").children().eq(3).text($this.z_history_data[mouseHoverPoint]).css("color",colorList[1]);
                                 // 浮窗数据
                                 $(".dataPrice").text($this.history_data[mouseHoverPoint]).css("color",colorList[1]);
                                 $(".change").text($this.z_history_data[mouseHoverPoint]+"%").css("color",colorList[1]);
                             }
-                            $(".vol i").text($this.a_history_data[mouseHoverPoint]);
+                            // $("#toolContent_M").children().eq(2).text( Math.round($this.a_history_data[mouseHoverPoint]/100) );
+                            $(".vol i").text($this.a_history_data[mouseHoverPoint]/100);
                             $("#quantityRatio").text($this.a_history_data[mouseHoverPoint]);
-                            // 浮层中的销量
-                            var volFix = parseFloat($this.a_history_data[mouseHoverPoint])/100;
-                            $(".volume").text(setUnit(volFix) +"手"); 
-                            
+                            // if($this.a_history_data[mouseHoverPoint]>100){
+                            $(".volume").text((parseFloat($this.a_history_data[mouseHoverPoint])/100).toFixed(2)  +"手"); 
+                            // }else{
+                                // $(".volume").text(parseFloat($this.a_history_data[mouseHoverPoint]).toFixed(2) +"股"); 
+                            // }
                         } else {
                             $(".vol i").text("-");
                             $("#quantityRatio").text("-");
@@ -1878,14 +1415,7 @@ var todayDate;//通过xml查询得到的当前日期
                             $(".volume").text("-");
                         }
                     });
-                    // 设置成交量的单位变化状况
-                    function setyAsixName(value) {
-                        var data = setUnit(value,true);
-                        var maximun = (data=="0"?"0":floatFixedZero(data.value))
-                        var yAxisName = (data=="0"?"量":data.unit);
-                        $(".volumn .volumeMax").text(maximun);
-                        $(".volumn .vol-unit").text(yAxisName);
-                    };
+
 
                     $("#main1").bind("mouseenter", function (event) {
                         toolContentPosition(event);
@@ -1940,11 +1470,17 @@ var todayDate;//通过xml查询得到的当前日期
 
         function set_marketTool(data,$this) {
             if (!isHoverGraph || isHoverGraph && !$this.history_data[mouseHoverPoint] && data) {
-                $(".vol i").text(parseFloat(data[2]).toFixed(2));
+                // $("#toolContent_M").children().first().text(data[3]);
+                // $("#toolContent_M").children().eq(2).text(data[2]);
+                $(".vol i").text(data[2]);
                 $("#quantityRatio").text(data[2]);
-                // if( parseFloat(data[0]) >= parseFloat(yc)){
-                // }else{
-                // }
+                if( parseFloat(data[0]) >= parseFloat(yc)){
+                    // $("#toolContent_M").children().eq(1).text(data[0]).css("color",colorList[0]);
+                    // $("#toolContent_M").children().eq(3).text(data[1]).css("color",colorList[0]);
+                }else{
+                    // $("#toolContent_M").children().eq(1).text(data[0]).css("color",colorList[1]);
+                    // $("#toolContent_M").children().eq(3).text(data[1]).css("color",colorList[1]);
+                }
             }
         }
 
@@ -2122,7 +1658,7 @@ var todayDate;//通过xml查询得到的当前日期
             var split = parseFloat(((maxY - minY) / 6).toFixed(4));
             var split1 = parseFloat(((maxY1 - minY1) / 6).toFixed(4));
 
-            v_data =  getxAxis((data.Date?data.Date:data[0].Date),$this);
+            v_data =  getxAxis((data[0].Date),$this);
             var option ={
                 yAxis: [
                     {
