@@ -222,7 +222,7 @@ body{
 .market-main-chart>a{
     color: #333;
 }
-/* 涨跌幅列表 */
+/* 报价表 */
 .zdf-list{
     padding: 40px;
 }
@@ -235,7 +235,7 @@ body{
 .zdf-list-one{
     width: 100%;
 }
-.zdf-list-one>ul{
+.zdf-list-one>ul,.zdf-list-detail>ul{
     display: flex;
     text-align: center;
     text-overflow: ellipsis;
@@ -244,6 +244,7 @@ body{
 }
 .zdf-list-title{
     line-height: 40px;
+    background-color: #f2f2f2;
 }
 .zdf-list-title>li{
     flex: 1;
@@ -264,12 +265,16 @@ body{
 .zdf-list-detail>ul>li{
     flex: 1;
     line-height: 50px;
-}
-.zdf-list-detail>ul{
-    background-color: #f2f2f2;
+    color: #555;
 }
 .zdf-list-detail>ul:hover,.zdf-list-detail>ul:focus,.zdf-list-detail>ul:active{
     background-color: #e5e5e5;
+}
+.zdf-list-detail:nth-of-type(even){
+    background-color: #f2f2f2;
+}
+.zdf-list-detail>ul>li>a{
+    color: #555;
 }
 /* 页码 */
 .M-box{
