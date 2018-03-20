@@ -12,6 +12,8 @@ var _FourthS = [{name:"深证成指",sectionid:4,exchangeID:"2",code:"399001"},{
 var _FifthS = [{name:"深证成指",sectionid:5,exchangeID:"2",code:"399001"},{name:"创业板",exchangeID:"2",sectionid:5,code:"399006"},{name:"中小板",sectionid:5,exchangeID:"2",code:"399003"}];
 var _SixthS = [{name:"深证成指",sectionid:6,exchangeID:"2",code:"399001"},{name:"创业板",exchangeID:"2",sectionid:6,code:"399006"},{name:"中小板",sectionid:6,exchangeID:"2",code:"399003"}];
 var oWs=offerWs=socket=echartsWS=null;
+var nowPage = 1;
+var itemTotalCount = 0;
 $(function(){
     // 查询板块
     checkoutBlock();
@@ -53,27 +55,6 @@ $(function(){
         }
     );
     initChartInfo();
-
-    $(".M-box").pagination({
-        prevContent:"上一页",
-        nextContent:"下一页",
-        totalData:50,
-        showData:10,
-        pageCount:5,
-        mode: 'fixed',
-        callback: function (api) {
-            console.log(api.getCurrent())
-            var offerHeader = {
-                "msgtype":"Q3301",
-                "sectionId": secId,
-                "startIndex": api.getCurrent() * 10 - 9,
-                "count": 10,
-                "field": 0,
-                "orderType": 0
-            };
-            oWs.request(offerHeader);
-        }
-    });
 });
 ;(function($,window,document,undefined){
     $.fn.initMline = function(options,params){
@@ -170,14 +151,16 @@ function initBlockInfo(secId){
     oWs = new WebSocketConnect({wsUrl:requestOffer});
     offerWs = oWs.createWebSocket();
     var options = {
-        offerHeader:{
-            "msgtype":"Q3301",
-            "sectionId": secId,
-            "startIndex": 0,
-            "count": 10,
-            "field": 0,
-            "orderType": 0
-        },
+        // 查询历史报价表记录
+        // offerHeader:{
+        //     "msgtype":"Q3301",
+        //     "sectionId": secId,
+        //     "startIndex": 0,
+        //     "count": 10,
+        //     "field": 0,
+        //     "orderType": 0
+        // },
+        // 订阅报价表
         takeOffer:{
             "msgtype":"S3301",
             "sectionId": secId,
@@ -185,7 +168,12 @@ function initBlockInfo(secId){
             "count": 10,
             "field": 0,
             "orderType": 0
-        }
+        },
+        // 获取总条数
+        totalCount:{
+            "msgtype":"Q3302",
+            "sectionId": secId
+        }        
     };
     connectEvent(options);
 }
@@ -198,9 +186,11 @@ function connectEvent(opt){
         oWs.reconnect(); //报错重连
     };
     offerWs.onopen = function () {
-        //心跳检测重置
-        oWs.request(opt.offerHeader);
-        // oWs.request(opt.takeOffer);
+        // oWs.request(opt.offerHeader);
+        oWs.request(opt.takeOffer);
+        setTimeout(function(){
+            oWs.request(opt.totalCount);
+        },1000);
     };
     offerWs.onmessage = function (evt) {
         var data  = evt.data.split("|")[0];  //每个json包结束都带有一个| 所以分割最后一个为空
@@ -209,11 +199,41 @@ function connectEvent(opt){
         var MsgType =  data["MsgType"] || data[0]["MsgType"]; //暂时用他来区分推送还是历史数据 如果存在是历史数据,否则推送行情
         switch(MsgType)
         {
-            case "R3301":
+            // 历史查询报价表状态
+            // case "R3301":
+            //     fillNewOfferForm(data);
+            //     break;
+            // 订阅报价表
+            case "P3301":
+                if(data.ErrorCode == 9999){
+                    return;
+                }
                 fillNewOfferForm(data);
                 break;
-            case "P3301":
-                fillNewOfferForm(data);
+            case "R3302":
+                if(data.ErrorCode == 9999){
+                    return;
+                }
+                itemTotalCount = data.SectionItemCount;
+                $(".M-box2").pagination({
+                    prevContent:"上一页",
+                    nextContent:"下一页",
+                    totalData:itemTotalCount,
+                    showData:10,
+                    mode: 'fixed',
+                    callback: function (api) {
+                        nowPage = api.getCurrent();
+                        var offerHeader = {
+                            "msgtype":"S3301",
+                            "sectionId": secId,
+                            "startIndex": api.getCurrent() * 10 - 9,
+                            "count": 10,
+                            "field": 0,
+                            "orderType": 0
+                        };
+                        oWs.request(offerHeader);
+                    }
+                });
                 break;
             default:
             break;
@@ -222,12 +242,13 @@ function connectEvent(opt){
 }
 // 点击切换处理
 function tabLi(index){
+    nowPage = 1;
     var el = $(".mc-tab-li ul li").eq(index);
     $(".zdf-list>h1").html($(el).text());
     
     secId = $(el).data("sectionid");
     var offerHeader={
-        "msgtype":"Q3301",
+        "msgtype":"S3301",
         "sectionId": secId,
         "startIndex": 0,
         "count": 10,
@@ -236,16 +257,23 @@ function tabLi(index){
     };
     oWs.request(offerHeader);
 
-    $(".M-box").pagination({
+    var pageCount={
+        "msgtype":"Q3302",
+        "sectionId": secId,
+    };
+    setTimeout(function(){
+        oWs.request(pageCount);
+    },1000);
+    $(".M-box2").pagination({
         prevContent:"上一页",
         nextContent:"下一页",
-        totalData:50,
+        totalData:itemTotalCount,
         showData:10,
-        pageCount:5,
         mode: 'fixed',
         callback: function (api) {
+            nowPage = api.getCurrent();
             var data = {
-                "msgtype":"Q3301",
+                "msgtype":"S3301",
                 "sectionId": secId,
                 "startIndex": api.getCurrent() * 10 - 9,
                 "count": 10,
@@ -414,7 +442,6 @@ function tabLi(index){
         break;
     }
 }
-
 // 获取X轴的数值
 function getxAxis(todayDateStr,oneZSInfo){
     var beginTime,finishTime,beginTime1,finishTime1,
@@ -1120,25 +1147,24 @@ function initCharts(data,type,stockOne){
 }
 // 填充报价表表单
 function fillNewOfferForm(data){
-    console.log(data);
     var strHtml = '';
     for(var i=0;i<data.QueryRes.length;i++){
         strHtml += '<li class="zdf-list-one zdf-list-detail"><ul class="clearfix">'+
-                    '<li>'+(i+1)+'</li>'+
+                    '<li>'+(nowPage==1?(i+1):(nowPage-1)*10+(i+1))+'</li>'+
                     '<li><a data-exchangeID='+data.QueryRes[i].ExchangeID+' data-id='+data.QueryRes[i].InstrumentID+' href="javascript:void(0)">'+data.QueryRes[i].InstrumentID+'</a></li>'+
                     '<li><a data-exchangeID='+data.QueryRes[i].ExchangeID+' data-id='+data.QueryRes[i].InstrumentID+' href="javascript:void(0)">'+data.QueryRes[i].InstrumentName+'</a></li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].Price).toFixed(2)+'<i></i></li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].UDChange).toFixed(2)+'<i></i></li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].UDRatio).toFixed(2)+'<i></i></li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].OpenPx).toFixed(2)+'<i></i></li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].HighPx).toFixed(2)+'<i></i></li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].LowPx).toFixed(2)+'<i></i></li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].PreClose).toFixed(2)+'<i></i></li>'+
-                    // '<li>0<i></i></li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].VolRatio).toFixed(2)+'<i></i></li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].Amplitude).toFixed(2)+'<i></i></li>'+
-                    '<li>'+data.QueryRes[i].Volume+'<i></i></li>'+
-                    '<li>'+data.QueryRes[i].Value+'<i></i></li>'+
+                    '<li>'+parseFloat(data.QueryRes[i].Price).toFixed(2)+'</li>'+
+                    '<li>'+parseFloat(data.QueryRes[i].UDChange).toFixed(2)+'</li>'+
+                    '<li>'+parseFloat(data.QueryRes[i].UDRatio).toFixed(2)+'</li>'+
+                    '<li>'+parseFloat(data.QueryRes[i].OpenPx).toFixed(2)+'</li>'+
+                    '<li>'+parseFloat(data.QueryRes[i].HighPx).toFixed(2)+'</li>'+
+                    '<li>'+parseFloat(data.QueryRes[i].LowPx).toFixed(2)+'</li>'+
+                    '<li>'+parseFloat(data.QueryRes[i].PreClose).toFixed(2)+'</li>'+
+                    // '<li>0</li>'+
+                    '<li>'+parseFloat(data.QueryRes[i].VolRatio).toFixed(2)+'</li>'+
+                    '<li>'+parseFloat(data.QueryRes[i].Amplitude).toFixed(2)+'</li>'+
+                    '<li>'+data.QueryRes[i].Volume+'</li>'+
+                    '<li>'+data.QueryRes[i].Value+'</li>'+
                     '</ul></li>';
     }
     $("#offerForm").html(strHtml);

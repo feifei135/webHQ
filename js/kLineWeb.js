@@ -1,5 +1,6 @@
 var KLineSocket;
 var _this;
+var clickTimer = null;
 $(document).keydown(function(e){
     if(_this!=undefined&&($(_this).attr("id")=="MLine"||$(_this).attr("id")=="kline")){
         $(_this).children(".charts-focus").focus();
@@ -19,9 +20,12 @@ $(document).keydown(function(e){
                                  
         // 点击查询周期K线
         $("#tab li").on("click",function(){
+
+            var _this = this;
             $("#withoutData").html("<img src='../img/loading.gif' class='loading'/>");
+
             // 点击的K线类型
-            var klineType = $(this).attr("id");
+            var klineType = $(_this).attr("id");
 
             // 判断当前查询的是否是上一次查询的类型
             if(KLineSocket.option){
@@ -38,47 +42,74 @@ $(document).keydown(function(e){
             // 显示没有数据
             $("#withoutData").show().siblings().hide();
             
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(function(){
+                
+                
 
-            // 清空K线图
-            if(KLineSocket.KChart.getOption()&&KLineSocket.KChart.getOption().series.length!=0){
-                KLineSocket.KChart.dispose();
-                KLineSocket.KChart = echarts.init(document.getElementById('kline_charts'));
-            }
+                // 清空K线图
+                if(KLineSocket.KChart.getOption()&&KLineSocket.KChart.getOption().series.length!=0){
+                    KLineSocket.KChart.dispose();
+                    KLineSocket.KChart = echarts.init(document.getElementById('kline_charts'));
+                }
 
-            // 取消之前的订阅,同时清空历史数据数组
-            if(KLineSocket.HistoryData.preLineType!=undefined&&KLineSocket.HistoryData.preLineType!=""){
-                KLineSocket.getKWatchCC();
+                // 取消之前的订阅,同时清空历史数据数组
+                if(KLineSocket.HistoryData.preLineType!=undefined&&KLineSocket.HistoryData.preLineType!=""){
+                    KLineSocket.getKWatchCC();
 
-                // 清空数据，设置假数据
-                $.each(KLineSocket.HistoryData,function(i,obj){
-                    if(typeof KLineSocket.HistoryData[i] == "string"){
-                        KLineSocket.HistoryData[i] = "";
-                    }
-                    if(obj instanceof Array){
-                        KLineSocket.HistoryData[i] = [];
-                    }
-                    if(typeof KLineSocket.HistoryData[i] == "number"){
-                        KLineSocket.HistoryData[i] = 0;
-                    }
-                    if(typeof KLineSocket.HistoryData[i] == "boolean"){
-                        KLineSocket.HistoryData[i] = 0;
-                    }
-                });
-            }
+                    // 清空数据，设置假数据
+                    $.each(KLineSocket.HistoryData,function(i,obj){
+                        if(typeof KLineSocket.HistoryData[i] == "string"){
+                            KLineSocket.HistoryData[i] = "";
+                        }
+                        if(obj instanceof Array){
+                            KLineSocket.HistoryData[i] = [];
+                        }
+                        if(typeof KLineSocket.HistoryData[i] == "number"){
+                            KLineSocket.HistoryData[i] = 0;
+                        }
+                        if(typeof KLineSocket.HistoryData[i] == "boolean"){
+                            KLineSocket.HistoryData[i] = 0;
+                        }
+                    });
+                }
 
-            // 点击分时图，不进行提交
-            if(klineType=="mline"){
-                return;
-            } 
-            KLineSocket.HistoryData.queryTimes = 0;
+                // 点击分时图，不进行提交
+                if(klineType=="mline"){
+                    return;
+                } 
+                KLineSocket.HistoryData.queryTimes = 0;
 
-            KLineSocket.ws.onopen();
+                // KLineSocket.ws.onopen();
+                /*
+                * 个股/指数 实时数据，通过快照接口
+                * 其他数据，处理方式不同
+                */
+                switch(KLineSocket.option.lineType){
+                    case "day":
+                    case "week":
+                    case "month":
+                    case "year":
+                    KLineSocket.getHistoryKQFirstDayPrev();
+                        break;
+                    case "minute":
+                    case "fivem":
+                    case "tenm":
+                    case "fifm":
+                    case "thim":
+                    case "hour":
+                    KLineSocket.getHistoryKQAllMinToday();
+                        break;
+                    default:;
+                }
 
-            // 当前K线存储为前一根K线
-            KLineSocket.HistoryData.preLineType = KLineSocket.option.lineType;     
+                // 当前K线存储为前一根K线
+                KLineSocket.HistoryData.preLineType = KLineSocket.option.lineType;     
 
-            // K线前一根柱子的收盘价
-            KLineSocket.option.lastClose = 0; 
+                // K线前一根柱子的收盘价
+                KLineSocket.option.lastClose = 0; 
+            },300);
+            
                 
         });
     };
@@ -448,35 +479,15 @@ var initSocketEvent = function(socket){
                     //心跳检测重置
                     socket.reset().start();                 // 第一次建立连接则启动心跳包
 
-                    /*
-                     * 个股/指数 实时数据，通过快照接口
-                     * 其他数据，处理方式不同
-                     */
                     // socket.option.lineType-区分查询历史数据和指数/个股信息
-                    if(socket.option.lineType&&socket.option.lineType=="mline"){
+                    if(KLineSocket.option.lineType&&KLineSocket.option.lineType=="mline"){
                         return
                     }
-
-                    switch(socket.option.lineType){
-                        case "day":
-                        case "week":
-                        case "month":
-                        case "year":
-                            socket.getHistoryKQFirstDayPrev();
-                            break;
-                        case "minute":
-                        case "fivem":
-                        case "tenm":
-                        case "fifm":
-                        case "thim":
-                        case "hour":
-                            socket.getHistoryKQAllMinToday();
-                            break;
-                        default:;
-                    }
+                    
                     
                 };
     socket.ws.onmessage = function (evt) {
+                    
                     // console.log("打开成功");
                     var jsons  = evt.data.split("|");  //每个json包结束都带有一个| 所以分割最后一个为空
                     $.each(jsons,function (i,o) {
@@ -642,7 +653,7 @@ var initSocketEvent = function(socket){
  */
 // K线图方法
 function KCharts(dataList, isHistory){
-
+    
     if(dataList){
         // 解析数据
         var dataJsons = splitData(dataList, isHistory); 
@@ -919,12 +930,12 @@ function chartPaint(isHistory){
             // 绘制K线图
             KLineSocket.KChart.setOption({
                 backgroundColor: "#fff",
-                animation: true,
+                animation: false,
                 tooltip: {
                     trigger: 'axis',
                     showContent: false
                 },
-                hoverLayerThreshold:3000,
+                hoverLayerThreshold:10,
                 axisPointer: {
                     link: {xAxisIndex: 'all'},
                     label: {

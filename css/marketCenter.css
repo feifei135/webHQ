@@ -238,8 +238,6 @@ body{
 .zdf-list-one>ul,.zdf-list-detail>ul{
     display: flex;
     text-align: center;
-    text-overflow: ellipsis;
-    overflow: hidden;
     font-size: 14px;
 }
 .zdf-list-title{
@@ -266,6 +264,10 @@ body{
     flex: 1;
     line-height: 50px;
     color: #555;
+    /* max-width: 83px; */
+    text-align: center;
+    /* text-overflow: ellipsis;
+    overflow: hidden; */
 }
 .zdf-list-detail>ul:hover,.zdf-list-detail>ul:focus,.zdf-list-detail>ul:active{
     background-color: #e5e5e5;
@@ -277,24 +279,26 @@ body{
     color: #555;
 }
 /* 页码 */
-.M-box{
+.M-box2{
     line-height: 40px;
     font-size: 14px;
     text-align: right;
     padding-bottom: 40px;
 }
-.M-box>a{
+.M-box2>a{
     color: #555;
     width: 40px;
     display: inline-block;
+    text-align: center;
 }
-.M-box>.active{
+.M-box2>.active{
     color: #2b99ff;
     width: 40px;
     display: inline-block;
     font-weight: bold;
+    text-align: center;
 }
-.M-box>.prev,.M-box>.next{
+.M-box2>.prev,.M-box2>.next{
     color: #555;
     width: 100px; 
     display: inline-block;

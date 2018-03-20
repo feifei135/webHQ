@@ -30,7 +30,14 @@ i,em{
 	float: right;
 }
 .clearfix{
+	*zoom: 1;
+}
+.clearfix:after{
+	content: "";
+	height: 0;
+	display: block;
 	clear: both;
+	overflow: hidden;
 }
 .container-detail{
 	width: 1240px;
@@ -51,11 +58,13 @@ i,em{
 }
 /*top bar*/
 .top-bar{
-	display: flex;
+	display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
 }
 .tb-fieldName{
-	padding-right: 40px;
-	min-width: 260px;
+	width: 260px;
 	border-right: 1px solid #e5e5e5;
 }
 .tb-fn-title{
@@ -65,23 +74,26 @@ i,em{
 .tb-fn-num{
 	font-size: 16px;
 	line-height: 27px;
+	overflow: hidden;
 }
 .tb-fn-num span{
 	float: left;
 	margin-right: 20px;
 }
 .tb-fielList{
-	font-size: 0;
-	padding-left: 40px;
-	overflow: hidden;
-	/*width: 890px;*/
-	flex: 1;
+	-webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
 }
 .tb-fielList li{
-	display: block;
 	float: left;
 	font-size: 16px;
 	line-height: 27px;
+	height: 27px;
+	width: 25%;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .tb-fielList li:nth-child(n){
 	width: 19%;

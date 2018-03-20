@@ -2,6 +2,8 @@ var yc=0,xml,decimal=2,tFlag=false;
 var stockType = '';
 var todayDate;//通过xml查询得到的当前日期
 var MarketStatus;//市场状态
+// 十大流通股 公司详情请求地址
+var DKServiceUrl = "https://117.78.45.83:8443/";//正式环境 "http://172.17.20.178:8080/" 内网环境
 ;(function($,undefined){
     var socket = null;
     var myChart = null;
@@ -341,14 +343,15 @@ var MarketStatus;//市场状态
                         var dateT = data.Date;
                         $this.v_data = getxAxis(dateT,$this.options);
                         initYCCharts(yc,$this);
-                        if(parseFloat(data.Time) > 93015){
-                            tFlag = true;
-                        }
-                        if(tFlag){
-                            todayDate = -1;
-                        }else{
-                            todayDate = parseInt(data.Date)-1;
-                        }
+                        todayDate = -1;
+                        // if(parseFloat(data.Time) > 93015){
+                        //     tFlag = true;
+                        // }
+                        // if(tFlag){
+                        //     todayDate = -1;
+                        // }else{
+                        //     todayDate = parseInt(data.Date)-1;
+                        // }
                         var tradingHistoryData={
                             "MsgType":"Q3032",
                             "ExchangeID":$this.options.exchangeID,
@@ -356,7 +359,7 @@ var MarketStatus;//市场状态
                             "PructType":$this.options.typeIndex.toString(),
                             "StartIndex":"-1",
                             "StartDate":todayDate.toString(),
-                            "Count":(stockType == "Field"?"10":"5")
+                            "Count":(stockType == "Field"?"14":"5")
                         };
                         socket.request(tradingHistoryData);
                         return;
@@ -501,6 +504,7 @@ var MarketStatus;//市场状态
                     show:true
                 },
                 {
+                    show:true,
                     top: '85%',
                     height: '13%',
                 },
@@ -539,18 +543,22 @@ var MarketStatus;//市场状态
                     axisLabel: {
                         show:true,
                         interval: function (number, string) {
-                            if(number == 0 || number == $this.v_data.length-1){
+                            // if(number == 0 || number == $this.v_data.length-1){
+                            //     return true;
+                            // }
+                            // if(stopTime){
+                            //     if(string.indexOf(stopTime[0].split(" ")[1])>-1){
+                            //         return true;
+                            //     }
+                            // }
+                            // if(string.indexOf("00")>-1){
+                            //     return true;
+                            // }
+                            if(number % 60 == 0){
                                 return true;
+                            }else{
+                                return false;
                             }
-                            if(stopTime){
-                                if(string.indexOf(stopTime[0].split(" ")[1])>-1){
-                                    return true
-                                }
-                            }
-                            if(string.indexOf("00")>-1){
-                                return true
-                            }
-
                         },
                         formatter: function (value, number) {
                             var tVal = value.split(" ")[2];
@@ -567,6 +575,13 @@ var MarketStatus;//市场状态
                     },
                     data: $this.v_data,
                     splitLine: {
+                        interval:function(index,value){
+                            if(index % 60 == 0){
+                                return true;
+                            }else{
+                                return false;
+                            }
+                        },
                         show: true
                     },
                     axisPointer: {
@@ -767,6 +782,9 @@ var MarketStatus;//市场状态
                         },
                         showMinLabel:true,
                         showMaxLabel:true,
+                    },
+                    axisTick:{
+                        show:false
                     },
                     gridIndex: 1,
                     splitNumber: 2
@@ -971,7 +989,7 @@ var MarketStatus;//市场状态
             $(".tb-fn-num").html(html2);
             $(".tb-fielList").html(html);
         }
-    };
+    }
     // 五档盘口-五档盘口数据，没有委比委差
     function setfillPK(data){
         if($(".cb-pk h2").length==0){
@@ -1004,7 +1022,7 @@ var MarketStatus;//市场状态
 
         $(".cb-txtOffer").html(txtOffer);
         $(".cb-txtBids").html(txtBids);
-    };
+    }
     // 五档扩展接口的委比委差-个股信息-存在五笔盘口信息
     function setfillPKExt(data){
         var wb = data.Entrustment/10000;
@@ -1014,7 +1032,7 @@ var MarketStatus;//市场状态
 
         $(".cbt-np").html( floatFixedZero(data.InnerVolume/100)+"手" );
         $(".cbt-wp").html( floatFixedZero(data.OuterVolume/100)+"手" );
-    };
+    }
     // 五档扩展接口-指数接口-没有五笔盘口数据信息
     function setfillPKExtZS(data){
         if($(".cb-pk h2").length==0){
@@ -1253,7 +1271,7 @@ var MarketStatus;//市场状态
                     var price = [];//价格
                     var volume = [];//成交量
                     var zdfData = [];//涨跌幅
-                    var flag = [];//现价-开盘价 值为1和-1
+                    var flagColor = [];//现价-开盘价 值为1和-1
                     var lastDate = dateToStamp(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time));
                     var unit="";
                     for(var i=0;i<$this.c_data.length;i++){
@@ -1277,7 +1295,7 @@ var MarketStatus;//市场状态
                                 
                                 volume[i] = data[j].Volume;
                                 
-                                flag[i] = (parseFloat(data[j].Price)-parseFloat(data[j].Open)) >= 0 ? 1 : -1;
+                                flagColor[i] = (parseFloat(data[j].Price)-parseFloat(data[j].Open)) >= 0 ? 1 : -1;
                                 
                                 if(fvalue > 0){
                                     r1 = Math.abs(fvalue - yc);
@@ -1290,7 +1308,7 @@ var MarketStatus;//市场状态
                                 price[i] = null;
                                 volume[i] = null;
                                 zdfData[i] = null;
-                                flag[i] = null;
+                                flagColor[i] = null;
                             }
                         }
                     }
@@ -1298,7 +1316,7 @@ var MarketStatus;//市场状态
                     $this.history_data = price;//价格历史数据
                     $this.z_history_data = zdfData;//涨跌幅历史数据
                     $this.a_history_data = volume;//成交量历史数据
-                    $this.flag_data = flag;//成交量颜色标识
+                    $this.flag_data = flagColor;//成交量颜色标识
                     //取绝对值  差值 
                     $this.interval = $this.interval + $this.interval*0.1;
                     if (yc) {
@@ -1329,26 +1347,7 @@ var MarketStatus;//市场状态
                     var split = parseFloat(((maxY - minY) / 6).toFixed(4));
                     var split1 = parseFloat(((maxY1 - minY1) / 6).toFixed(4));
                     var option = {
-                        backgroundColor: "#fff",
                         animation: false,
-                        grid: [
-                            {
-                                top: "5%",
-                                height: '70%',
-                                show:true
-                            },
-                            {
-                                top: '85%',
-                                height: '13%',
-                            },
-                            // {
-                            //     bottom:'-100%',
-                            //     height:'10%',
-                            // }
-                        ],
-                        title: {
-                            show: false
-                        },
                         axisPointer: {
                             link: {xAxisIndex: 'all'},
                             label: {
@@ -1367,90 +1366,90 @@ var MarketStatus;//市场状态
                             trigger: 'axis',
                             showContent:false
                         },
-                        dataZoom: [
-                            // {
-                            //     type: 'inside',
-                            //     xAxisIndex: [0, 1],
-                            //     start: 0,
-                            //     end: 100
-                            // },
-                            // {
-                            //     show: true,
-                            //     xAxisIndex: [0, 1],
-                            //     type: 'slider',
-                            //     bottom:'0',
-                            //     height:"40px",
-                            //     start: 0,
-                            //     end: 100,
-                            //     backgroundColor:"#fff",
-                            //     fillerColor:"rgba(0,0,0,0.2)",
-                            //     borderColor:"transparent",
-                            //     handleIcon:'path://M 100 100 L 300 100 L 300 700 L 100 700 z',
-                            //     handleStyle:{
-                            //         color:"#f2f2f2",
-                            //         borderColor:"#b4b4b4",
-                            //         borderWidth:1
-                            //     },
-                            //     textStyle:{
-                            //         color:colorList[3],
-                            //         fontSize:14
-                            //     },
-                            //     labelFormatter: function (value) {
-                            //         if(!value) return;
-                            //         return $this.v_data[value].split(" ")[3];
-                            //     }
-                            // }
-                        ],
+                        // dataZoom: [
+                        //     // {
+                        //     //     type: 'inside',
+                        //     //     xAxisIndex: [0, 1],
+                        //     //     start: 0,
+                        //     //     end: 100
+                        //     // },
+                        //     // {
+                        //     //     show: true,
+                        //     //     xAxisIndex: [0, 1],
+                        //     //     type: 'slider',
+                        //     //     bottom:'0',
+                        //     //     height:"40px",
+                        //     //     start: 0,
+                        //     //     end: 100,
+                        //     //     backgroundColor:"#fff",
+                        //     //     fillerColor:"rgba(0,0,0,0.2)",
+                        //     //     borderColor:"transparent",
+                        //     //     handleIcon:'path://M 100 100 L 300 100 L 300 700 L 100 700 z',
+                        //     //     handleStyle:{
+                        //     //         color:"#f2f2f2",
+                        //     //         borderColor:"#b4b4b4",
+                        //     //         borderWidth:1
+                        //     //     },
+                        //     //     textStyle:{
+                        //     //         color:colorList[3],
+                        //     //         fontSize:14
+                        //     //     },
+                        //     //     labelFormatter: function (value) {
+                        //     //         if(!value) return;
+                        //     //         return $this.v_data[value].split(" ")[3];
+                        //     //     }
+                        //     // }
+                        // ],
                         xAxis: [
                             {
                                 type:"category",
-                                axisTick: {
-                                    show:false
-                                },
-                                axisLabel: {
-                                    interval: function (number, string) {
-                                        if(number == 0 || number == $this.v_data.length-1){
-                                            return true;
-                                        }
-                                        if(stopTime){
-                                            if(string.indexOf(stopTime[0].split(" ")[1])>-1){
-                                                return true
-                                            }
-                                        }
-                                        if(string.indexOf("00")>-1){
-                                            return true
-                                        }
+                                // axisTick: {
+                                //     show:false
+                                // },
+                                // axisLabel: {
+                                //     interval: function (number, string) {
+                                //         if(number == 0 || number == $this.v_data.length-1){
+                                //             return true;
+                                //         }
+                                //         if(stopTime){
+                                //             if(string.indexOf(stopTime[0].split(" ")[1])>-1){
+                                //                 return true
+                                //             }
+                                //         }
+                                //         if(string.indexOf("00")>-1){
+                                //             return true
+                                //         }
 
-                                    },
-                                    formatter: function (value, number) {
-                                        var tVal = value.split(" ")[2];
-                                        return tVal;
-                                    },
-                                    textStyle: {
-                                        color: colorList[3]
-                                    }
-                                },
-                                axisLine: {
-                                    lineStyle:{
-                                        color:colorList[4]
-                                    }
-                                },
+                                //     },
+                                //     formatter: function (value, number) {
+                                //         var tVal = value.split(" ")[2];
+                                //         return tVal;
+                                //     },
+                                //     textStyle: {
+                                //         color: colorList[3]
+                                //     }
+                                // },
+                                // axisLine: {
+                                //     lineStyle:{
+                                //         color:colorList[4]
+                                //     }
+                                // },
                                 data: $this.v_data,
-                                splitLine: {
-                                    show: true
-                                },
-                                axisPointer: {
-                                    show:true,
-                                    label: {
-                                        formatter: function (params, value, s) {
-                                            return (params.value);
-                                            // return moment(parseFloat(params.value)).format("YYYY-MM-DD HH:mm");
-                                        },
-                                        padding:[3,5,5,5],
-                                        show:true
-                                    }
-                                },
-                                boundaryGap:false
+                                // splitLine: {
+                                //     show: true
+                                // },
+                                // axisPointer: {
+                                //     show:true,
+                                //     label: {
+                                //         formatter: function (params, value, s) {
+                                //             return (params.value);
+                                //             // return moment(parseFloat(params.value)).format("YYYY-MM-DD HH:mm");
+                                //         },
+                                //         padding:[3,5,5,5],
+                                //         show:true
+                                //     }
+                                // },
+                                // boundaryGap:false
                             },
                             {
                                 type:"category",
@@ -1773,7 +1772,7 @@ var MarketStatus;//市场状态
                                 itemStyle:{
                                     normal:{
                                         color:function(params){
-                                            if(flag[params.dataIndex] > 0){
+                                            if(flagColor[params.dataIndex] > 0){
                                                 return colorList[0];
                                             }else{
                                                 return colorList[1];
@@ -1851,14 +1850,14 @@ var MarketStatus;//市场状态
                         $(".volumn .vol-unit").text(yAxisName);
                     };
 
-                    $("#main1").bind("mouseenter", function (event) {
+                    $("#main1").on("mouseenter", function (event) {
                         toolContentPosition(event);
                         $("#toolContent").show();
 
                          _this = $("#MLine");
                     });
 
-                    $("#main1").bind("mousemove", function (event) {
+                    $("#main1").on("mousemove", function (event) {
                         isHoverGraph = true;
                         toolContentPosition(event);
 
@@ -2266,7 +2265,7 @@ var MarketStatus;//市场状态
 // 查询十大流通股和公司信息
 function requireCom(reqComOpt,code){
     var date = new Date();
-    var reqUrl = "http://172.17.20.178:8080/DKService/GetService?time="+date.getMinutes()+date.getSeconds()+"&Service=DataSourceService.Gets&ReturnType=JSON&OBJID=";
+    var reqUrl = DKServiceUrl + "DKService/GetService?time="+date.getMinutes()+date.getSeconds()+"&Service=DataSourceService.Gets&ReturnType=JSON&OBJID=";
     // 1=》000001
     if(code.length<6){
         code = new Array(6-code.length+1).join("0") + code;
@@ -2281,6 +2280,9 @@ function requireCom(reqComOpt,code){
             error: function(data){
                 console.log("请求公司信息出错");
             },
+            // complete:function(xhr){
+            //     console.log(xhr)
+            // },
             success: function(data){
                 if(data.response.data){
                     var responseInfo = data.response.data;
@@ -2410,7 +2412,7 @@ function setSDLTGInfo(list){
         var className = obj.DIRECT=="减持"?"green":(obj.DIRECT=="增持"?"red":null);
         var s_hld_shr_chg = parseInt(obj.HLD_SHR_CHG_LST)!=0?setUnit(obj.HLD_SHR_CHG_LST.replace(/,/g,"").trim()):"";
         txt += "<li>\
-                    <span>"+obj.SH_NAME+"</span>\
+                    <span title="+obj.SH_NAME+">"+obj.SH_NAME+"</span>\
                     <span>"+floatFixedTwo(obj.TTL_CPTL_RAT)+"%</span>\
                     <span>"+s_hld_shr+"</span>\
                     <span class="+className+">"+obj.DIRECT+s_hld_shr_chg+"</span>\
