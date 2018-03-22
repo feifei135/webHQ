@@ -1,19 +1,21 @@
-var wsUrlDevelop = 'ws://103.66.33.67:80';
+var wsUrlDevelop = 'ws://103.66.33.67:80';//分时图地址
 var stockXMlUrl = "http://103.66.33.58:443/GetCalcData";
-var requestOffer = "ws://103.66.33.67:443";
+var requestOffer = "ws://103.66.33.67:443";//报价表地址
 var stockList = [];//解析XML后得到的数组 所有指数的时间、类型、id、小数位数等
 var elementId,secId;
 var ZSId,ExchangeID;
 var LSData = ZCData = DYData = QPDATA = null;
 var _FirstS = [{name:"上证综指",sectionid:1,exchangeID:"1",code:"000001"},{name:"深证成指",sectionid:1,exchangeID:"2",code:"399001"},{name:"沪深300",sectionid:1,exchangeID:"2",code:"399007"}];
 var _SecS = [{name:"深证成指",sectionid:2,exchangeID:"2",code:"399001"},{name:"创业板",sectionid:2,exchangeID:"2",code:"399006"},{name:"中小板",sectionid:2,exchangeID:"2",code:"399003"}];
-var _ThirS = [{name:"上证综指",sectionid:3,exchangeID:"1",code:"000001"},{name:"深证成指",sectionid:3,exchangeID:"2",code:"399001"},{name:"沪深300",sectionid:3,exchangeID:"2",code:"399007"}];
-var _FourthS = [{name:"深证成指",sectionid:4,exchangeID:"2",code:"399001"},{name:"创业板",exchangeID:"2",sectionid:4,code:"399006"},{name:"中小板",sectionid:4,exchangeID:"2",code:"399003"}];
-var _FifthS = [{name:"深证成指",sectionid:5,exchangeID:"2",code:"399001"},{name:"创业板",exchangeID:"2",sectionid:5,code:"399006"},{name:"中小板",sectionid:5,exchangeID:"2",code:"399003"}];
-var _SixthS = [{name:"深证成指",sectionid:6,exchangeID:"2",code:"399001"},{name:"创业板",exchangeID:"2",sectionid:6,code:"399006"},{name:"中小板",sectionid:6,exchangeID:"2",code:"399003"}];
+var _ThirS = [{name:"Ｂ股指数",sectionid:3,exchangeID:"1",code:"000003"},{name:"上证综指",sectionid:3,exchangeID:"1",code:"000001"},{name:"Ａ股指数",sectionid:3,exchangeID:"1",code:"000002"}];
+var _FourthS = [{name:"成份Ｂ指",sectionid:4,exchangeID:"2",code:"399003"},{name:"深证成指",exchangeID:"2",sectionid:4,code:"399001"},{name:"深成指R",sectionid:4,exchangeID:"2",code:"399002"}];
+var _FifthS = [{name:"创业板",sectionid:5,exchangeID:"2",code:"399006"},{name:"深证成指",exchangeID:"2",sectionid:5,code:"399001"},{name:"中小板",sectionid:5,exchangeID:"2",code:"399003"}];
+var _SixthS = [{name:"中小板",sectionid:6,exchangeID:"2",code:"399003"},{name:"深证成指",exchangeID:"2",sectionid:6,code:"399001"},{name:"创业板",sectionid:6,exchangeID:"2",code:"399006"}];
 var oWs=offerWs=socket=echartsWS=null;
 var nowPage = 1;
 var itemTotalCount = 0;
+var count = 0;//推送报价表的次数
+var priceForm = [];
 $(function(){
     // 查询板块
     checkoutBlock();
@@ -27,7 +29,7 @@ $(function(){
     
     secId = $("#tab li").eq(0).data("sectionid");//当前选中板块id
     $(".zdf-list>h1").html( $("#tab li").eq(0).text());
-    // 填充列表
+    // 填充报价表
     initBlockInfo(secId);
     // 填充图表
     $("#main1").initMline(
@@ -95,12 +97,13 @@ $(function(){
                         myChart:null,
                         v_data:[],
                         c_date:[],
-                        oneZSInfo:null
+                        oneZSInfo:null,
+                        history_data:[],
+                        a_history_data:[],
+                        z_history_data:[],
                     };
                     stockList.push(opt);
                     return stockList;
-                    // var chartsInit = new InitMlineCharts(opt);
-                    // chartsInit.initEvent(ws);
                 }else{
                     console.log("请求码表出错");
                 }
@@ -148,18 +151,9 @@ function initTabBlock(jsonB){
 }
 // 建立查询报价表的连接
 function initBlockInfo(secId){
-    oWs = new WebSocketConnect({wsUrl:requestOffer});
-    offerWs = oWs.createWebSocket();
+    oWs = new WebSocketConnectBlock({wsUrl:requestOffer});
+    offerWs = oWs.createWebSocket(requestOffer);
     var options = {
-        // 查询历史报价表记录
-        // offerHeader:{
-        //     "msgtype":"Q3301",
-        //     "sectionId": secId,
-        //     "startIndex": 0,
-        //     "count": 10,
-        //     "field": 0,
-        //     "orderType": 0
-        // },
         // 订阅报价表
         takeOffer:{
             "msgtype":"S3301",
@@ -179,14 +173,16 @@ function initBlockInfo(secId){
 }
 // 连接报价表处理事件
 function connectEvent(opt){
-    offerWs.onclose = function () {
+    offerWs.onclose = function (event) {
+        console.log(event);
         oWs.reconnect(); //终端重连
+        alert("请稍等");
     };
-    offerWs.onerror = function () {
+    offerWs.onerror = function (event) {
+        console.log(event);
         oWs.reconnect(); //报错重连
     };
     offerWs.onopen = function () {
-        // oWs.request(opt.offerHeader);
         oWs.request(opt.takeOffer);
         setTimeout(function(){
             oWs.request(opt.totalCount);
@@ -208,7 +204,12 @@ function connectEvent(opt){
                 if(data.ErrorCode == 9999){
                     return;
                 }
+                if(!data.QueryRes && data.QueryRes.length<=0){
+                    return;
+                }
+                count++;                
                 fillNewOfferForm(data);
+                priceForm=data.QueryRes;
                 break;
             case "R3302":
                 if(data.ErrorCode == 9999){
@@ -220,7 +221,8 @@ function connectEvent(opt){
                     nextContent:"下一页",
                     totalData:itemTotalCount,
                     showData:10,
-                    mode: 'fixed',
+                    coping: true,
+                    // mode: 'fixed',
                     callback: function (api) {
                         nowPage = api.getCurrent();
                         var offerHeader = {
@@ -243,6 +245,7 @@ function connectEvent(opt){
 // 点击切换处理
 function tabLi(index){
     nowPage = 1;
+    count = 0;
     var el = $(".mc-tab-li ul li").eq(index);
     $(".zdf-list>h1").html($(el).text());
     
@@ -269,9 +272,10 @@ function tabLi(index){
         nextContent:"下一页",
         totalData:itemTotalCount,
         showData:10,
-        mode: 'fixed',
+        // mode: 'fixed',
+        cope:true,
         callback: function (api) {
-            nowPage = api.getCurrent();
+            nowPage = api.getCurrent();//等到当前页
             var data = {
                 "msgtype":"S3301",
                 "sectionId": secId,
@@ -283,19 +287,18 @@ function tabLi(index){
             oWs.request(data);
         }
     });
-
+    for(var i=0;i<stockList.length;i++){
+        var QXDYA={
+            "MsgType":"N1010",
+            "ExchangeID":stockList[i].exchangeID,
+            "InstrumentID":stockList[i].id,
+            "Instrumenttype":"1,11"
+        };
+        socket.request(QXDYA);
+    }
+    stockList=[];
     switch($(el).data("sectionid")){
         case 1:
-            for(var i=0;i<stockList.length;i++){
-                var QXDYA={
-                    "MsgType":"N1010",
-                    "ExchangeID":stockList[i].exchangeID,
-                    "InstrumentID":stockList[i].id,
-                    "Instrumenttype":"1,11"
-                };
-                socket.request(QXDYA);
-            }
-            stockList=[];
             // 填充图表
             $("#main1").initMline(
                 {
@@ -321,51 +324,8 @@ function tabLi(index){
                     stockCode:_FirstS[2].code,
                 }
             );
-            for(var i=0;i<stockList.length;i++){
-                LSData={
-                    "MsgType": "Q3011",
-                    "ExchangeID": stockList[i].exchangeID,
-                    "InstrumentID": stockList[i].id,
-                    "StartIndex": "0",
-                    "StartDate": "-1",
-                    "StartTime": "0", 
-                    "Count": "0"
-                };
-                ZCData={
-                    "MsgType":"S1010",
-                    "ExchangeID":stockList[i].exchangeID,
-                    "InstrumentID":stockList[i].id,
-                    "Instrumenttype":"1,11"
-                };
-                QPData={
-                    "MsgType":"Q8002",
-                    "ExchangeID":stockList[i].exchangeID,
-                    "InstrumentID":stockList[i].id,
-                    "PructType":"0"
-                };
-                // 获取历史数据
-                // socket.request(LSData);
-                getHistoryData(i);
-                // 获取昨收值
-                socket.request(ZCData);
-                // 实时订阅
-                // socket.request(DYData);
-                // 清盘
-                socket.request(QPData);
-            }
         break;
         case 2:
-            for(var i=0;i<stockList.length;i++){
-                var QXDYA={
-                    "MsgType":"N1010",
-                    "ExchangeID":stockList[i].exchangeID,
-                    "InstrumentID":stockList[i].id,
-                    "Instrumenttype":"1,11"
-                };
-                socket.request(QXDYA);
-            }
-
-            stockList=[];
             // 填充图表
             $("#main1").initMline(
                 {
@@ -394,56 +354,163 @@ function tabLi(index){
                     myChart:null
                 }
             );
-            for(var i=0;i<stockList.length;i++){
-                LSData={
-                    "MsgType": "Q3011",
-                    "ExchangeID": stockList[i].exchangeID,
-                    "InstrumentID": stockList[i].id,
-                    "StartIndex": "0",
-                    "StartDate": "-1",
-                    "StartTime": "0", 
-                    "Count": "0"
-                };
-                ZCData={
-                    "MsgType":"S1010",
-                    "ExchangeID":stockList[i].exchangeID,
-                    "InstrumentID":stockList[i].id,
-                    "Instrumenttype":"1,11"
-                };
-                QPData={
-                    "MsgType":"Q8002",
-                    "ExchangeID":stockList[i].exchangeID,
-                    "InstrumentID":stockList[i].id,
-                    "PructType":"0"
-                };
-                // 获取历史数据
-                getHistoryData(i);
-                // 获取昨收值
-                socket.request(ZCData);
-                // 实时订阅
-                // socket.request(DYData);
-                // 清盘
-                socket.request(QPData);
-            }
         break;
         case 3:
-        
+        // 填充图表
+            $("#main1").initMline(
+                {
+                    id:_ThirS[0].code,
+                    exchangeID:_ThirS[0].exchangeID,
+                    stockName:_ThirS[0].name,
+                    stockCode:_ThirS[0].code,
+                    myChart:null
+                }
+            );
+            $("#main2").initMline(
+                {
+                    id:_ThirS[1].code,
+                    exchangeID:_ThirS[1].exchangeID,
+                    stockName:_ThirS[1].name,
+                    stockCode:_ThirS[1].code,
+                    myChart:null
+                }
+            );
+            $("#main3").initMline(
+                {
+                    id:_ThirS[2].code,
+                    exchangeID:_ThirS[2].exchangeID,
+                    stockName:_ThirS[2].name,
+                    stockCode:_ThirS[2].code,
+                    myChart:null
+                }
+            );
         break;
         case 4:
-        
+            $("#main1").initMline(
+                {
+                    id:_FourthS[0].code,
+                    exchangeID:_FourthS[0].exchangeID,
+                    stockName:_FourthS[0].name,
+                    stockCode:_FourthS[0].code,
+                    myChart:null
+                }
+            );
+            $("#main2").initMline(
+                {
+                    id:_FourthS[1].code,
+                    exchangeID:_FourthS[1].exchangeID,
+                    stockName:_FourthS[1].name,
+                    stockCode:_FourthS[1].code,
+                    myChart:null
+                }
+            );
+            $("#main3").initMline(
+                {
+                    id:_FourthS[2].code,
+                    exchangeID:_FourthS[2].exchangeID,
+                    stockName:_FourthS[2].name,
+                    stockCode:_FourthS[2].code,
+                    myChart:null
+                }
+            );
         break;
         case 5:
-        
+            $("#main1").initMline(
+                {
+                    id:_FifthS[0].code,
+                    exchangeID:_FifthS[0].exchangeID,
+                    stockName:_FifthS[0].name,
+                    stockCode:_FifthS[0].code,
+                    myChart:null
+                }
+            );
+            $("#main2").initMline(
+                {
+                    id:_FifthS[1].code,
+                    exchangeID:_FifthS[1].exchangeID,
+                    stockName:_FifthS[1].name,
+                    stockCode:_FifthS[1].code,
+                    myChart:null
+                }
+            );
+            $("#main3").initMline(
+                {
+                    id:_FifthS[2].code,
+                    exchangeID:_FifthS[2].exchangeID,
+                    stockName:_FifthS[2].name,
+                    stockCode:_FifthS[2].code,
+                    myChart:null
+                }
+            );
         break;
         case 6:
-        
+            $("#main1").initMline(
+                {
+                    id:_SixthS[0].code,
+                    exchangeID:_SixthS[0].exchangeID,
+                    stockName:_SixthS[0].name,
+                    stockCode:_SixthS[0].code,
+                    myChart:null
+                }
+            );
+            $("#main2").initMline(
+                {
+                    id:_SixthS[1].code,
+                    exchangeID:_SixthS[1].exchangeID,
+                    stockName:_SixthS[1].name,
+                    stockCode:_SixthS[1].code,
+                    myChart:null
+                }
+            );
+            $("#main3").initMline(
+                {
+                    id:_SixthS[2].code,
+                    exchangeID:_SixthS[2].exchangeID,
+                    stockName:_SixthS[2].name,
+                    stockCode:_SixthS[2].code,
+                    myChart:null
+                }
+            );
         break;
         default:
         break;
     }
+    for(var i=0;i<stockList.length;i++){
+        LSData={
+            "MsgType": "Q3011",
+            "ExchangeID": stockList[i].exchangeID,
+            "InstrumentID": stockList[i].id,
+            "StartIndex": "0",
+            "StartDate": "-1",
+            "StartTime": "0", 
+            "Count": "0"
+        };
+        ZCData={
+            "MsgType":"S1010",
+            "ExchangeID":stockList[i].exchangeID,
+            "InstrumentID":stockList[i].id,
+            "Instrumenttype":"1,11"
+        };
+        QPData={
+            "MsgType":"Q8002",
+            "ExchangeID":stockList[i].exchangeID,
+            "InstrumentID":stockList[i].id,
+            "PructType":"0"
+        };
+        // 获取历史数据
+        // socket.request(LSData);
+        getHistoryData(i);
+        // 获取昨收值
+        socket.request(ZCData);
+        // 实时订阅
+        // socket.request(DYData);
+        // 清盘
+        socket.request(QPData);
+    }
 }
 // 获取X轴的数值
-function getxAxis(todayDateStr,oneZSInfo){
+function getxAxis(todayDateStr,stockOne){
+    var oneZSInfo = stockOne.oneZSInfo;
     var beginTime,finishTime,beginTime1,finishTime1,
         v_data = [];
         oneZSInfo.c_data=[];
@@ -525,9 +592,13 @@ function getxAxis(todayDateStr,oneZSInfo){
         }
         i++;
     }
-    for(var k = 0;k < oneZSInfo.c_data.length;k++){
+    var cLen = oneZSInfo.c_data.length;
+    for(var k = 0;k < cLen;k++){
         v_data.push(formatDate(oneZSInfo.c_data[k],"1"));
     }
+    stockOne.history_data.length = cLen;
+    stockOne.a_history_data.length = cLen;
+    stockOne.z_history_data.length = cLen;
     return v_data;
 }
 //1、用id判断出是哪个指数，获取其开始时间和结束时间、保留小数位
@@ -545,10 +616,7 @@ function compareTime(dataXML){
         endTime = dataXML.time.split("-")[1];
         startTime1 = endTime1 = "";
     }
-    // code = dataXML.InstrumentCode;
-    // decimal = parseInt(dataXML.PriceDecimal);//保留小数位数
     typeIndex = dataXML.ProductType;//指数类型
-    // imName = dataXML.InstrumentName;
     var start = parseInt(startTime.split(":")[0]);
     var end = parseInt(endTime.split(":")[0]);
     if(endTime1){
@@ -557,11 +625,7 @@ function compareTime(dataXML){
     var json,json1;
     if(start > end){//国际时间，需要将当前时间减一
         json = {
-            // ZSId:id,
             sub : -1,
-            // imName:imName,
-            // code:code,
-            // decimal:decimal,
             typeIndex:typeIndex,
             startTime:startTime,
             endTime:endTime1
@@ -570,10 +634,6 @@ function compareTime(dataXML){
     }else{
         json = {
             sub : 0,
-            // id:id,
-            // code:code,
-            // imName:imName,
-            // decimal:decimal,
             typeIndex:typeIndex,
             startTime:startTime,
             endTime:endTime
@@ -589,25 +649,13 @@ function compareTime(dataXML){
     }
     return ZSInfo;
 }
-function getHistoryData(i){
-    setTimeout(function(){
-        LSData={
-            "MsgType": "Q3011",
-            "ExchangeID": stockList[i].exchangeID,
-            "InstrumentID": stockList[i].id,
-            "StartIndex": "0",
-            "StartDate": "-1",
-            "StartTime": "0", 
-            "Count": "0"
-        };
-        socket.request( LSData );
-    },1000 * i);
-}
 function initChartInfo(){
     // 建立查询图表的连接
     socket = new WebSocketConnect({wsUrl:wsUrlDevelop});
-    echartsWS = socket.createWebSocket();
-
+    echartsWS = socket.createWebSocket(wsUrlDevelop);
+    initChartInfoEvt();
+}
+function initChartInfoEvt(){
     echartsWS.onclose = function () {
         socket.reconnect(); //终端重连
     };
@@ -664,6 +712,8 @@ function initChartInfo(){
                             return;
                         }
                         stockList[i].yc=data.PreClose; //获取昨收值
+
+                        initYCCharts(data,stockList[i]);
                     }
                 }
             break;
@@ -690,6 +740,21 @@ function initChartInfo(){
             socket.reset().start();
         }
     };
+}
+// 获取历史数据请求
+function getHistoryData(i){
+    setTimeout(function(){
+        LSData={
+            "MsgType": "Q3011",
+            "ExchangeID": stockList[i].exchangeID,
+            "InstrumentID": stockList[i].id,
+            "StartIndex": "0",
+            "StartDate": "-1",
+            "StartTime": "0", 
+            "Count": "0"
+        };
+        socket.request( LSData );
+    },1000 * i);
 }
 // 清盘后重绘图表
 function redrawChart(data,stockOne){
@@ -723,7 +788,7 @@ function redrawChart(data,stockOne){
         var split = parseFloat(((maxY - minY) / 6).toFixed(4));
         var split1 = parseFloat(((maxY1 - minY1) / 6).toFixed(4));
 
-        var v_data =  getxAxis((data.Date),stockOne.oneZSInfo);
+        var v_data =  getxAxis((data.Date),stockOne);
         var option ={
             yAxis: [
                 {
@@ -767,6 +832,7 @@ function redrawChart(data,stockOne){
         console.log("清盘有误");
     }
 }
+// 绘制历史数据和实时更新数据
 function initCharts(data,type,stockOne){
     if(!data){
         console.log("没有数据");
@@ -887,7 +953,7 @@ function initCharts(data,type,stockOne){
             startTime = oneZSInfo[0].startTime;
             endTime = oneZSInfo[0].endTime;
         }
-        var v_data = getxAxis(data[0].Date,oneZSInfo);
+        var v_data = getxAxis(data[0].Date,stockOne);
         stockOne.v_data = v_data;
         var lastDate = dateToStamp(formatDate(data[data.length-1].Date) +" "+formatTime(data[data.length-1].Time)),
             price = [],//价格
@@ -907,7 +973,7 @@ function initCharts(data,type,stockOne){
                         zdfData[i] = 0.10;
                     }else if(fvalue <= limitDown){
                         price[i] = limitDown;
-                        zdfData[i] = 0.10;
+                        zdfData[i] = -0.10;
                     }else{
                         price[i] = fvalue;
                         zdfData[i] = (((fvalue-yc)/yc)* 100).toFixed(2);
@@ -929,11 +995,12 @@ function initCharts(data,type,stockOne){
                 }
             }
         }
+        var dataLen = v_data.length;
         stockOne.history_data = price;//价格历史数据
         stockOne.z_history_data = zdfData;//涨跌幅历史数据
         stockOne.a_history_data = volume;//成交量历史数据
         
-        stockOne.interval = stockOne.interval*2;
+        stockOne.interval = stockOne.interval + stockOne.interval*0.1;
         yc = parseFloat(yc);
         var minY,middleY,maxY,minY1,maxY1;
         if (yc) {
@@ -941,7 +1008,7 @@ function initCharts(data,type,stockOne){
             middleY = yc.toFixed(decimal);
             maxY = (yc + stockOne.interval).toFixed(decimal);
 
-            var dd = ((parseFloat(minY) - (yc)) / (yc) );//* 100);
+            var dd = ((parseFloat(minY) - (yc)) / (yc) );
             if(Math.abs(dd) > 1){
                 minY1 = ((parseFloat(minY) - (yc)) / (yc)).toFixed(2);
                 maxY1 = ((parseFloat(maxY) - (yc)) / (yc)).toFixed(2);
@@ -955,37 +1022,37 @@ function initCharts(data,type,stockOne){
             maxY = 2;
         }
 
-        var split = parseFloat(((maxY - minY) / 6).toFixed(4));
-        var split1 = parseFloat(((maxY1 - minY1) / 6).toFixed(4));
+        var split = parseFloat(((maxY - minY) / 6).toFixed(decimal));
+        var split1 = parseFloat(((maxY1 - minY1) / 6).toFixed(decimal));
 
         var option = {
-            grid:{
-                show:true,
-                borderColor:"#e5e5e5",
-                top:'10%',
-                left:"5%",
-                right:"10%",
-                height:'90%',
-                containLabel:true
-            },
-            dataZoom:{
-                type:"inside",
-                disabled:true,
-            },
-            tooltip:{
-                trigger:"axis",
-                show:false
-            },
-            axisPointer:{
-                show:false,
-                label:{
-                    show:false,
-                    backgroundColor:"#555"
-                },
-                lineStyle:{
-                    type:"dotted"
-                }
-            },
+            // grid:{
+            //     show:true,
+            //     borderColor:"#e5e5e5",
+            //     top:'10%',
+            //     left:"5%",
+            //     right:"10%",
+            //     height:'90%',
+            //     containLabel:true
+            // },
+            // dataZoom:{
+            //     type:"inside",
+            //     disabled:true,
+            // },
+            // tooltip:{
+            //     trigger:"axis",
+            //     show:false
+            // },
+            // axisPointer:{
+            //     show:false,
+            //     label:{
+            //         show:false,
+            //         backgroundColor:"#555"
+            //     },
+            //     lineStyle:{
+            //         type:"dotted"
+            //     }
+            // },
             xAxis:{
                 splitLine:{
                     show:true,
@@ -1132,7 +1199,7 @@ function initCharts(data,type,stockOne){
                 data:price
             }
         };
-        stockOne.myChart = echarts.init(document.getElementById(stockOne.elementId));
+        // stockOne.myChart = echarts.init(document.getElementById(stockOne.elementId));
         stockOne.myChart.setOption(option);
 
         var size = (parseFloat(stockOne.history_data[stockOne.history_data.length-1]) - parseFloat(yc)).toFixed(decimal);
@@ -1145,26 +1212,328 @@ function initCharts(data,type,stockOne){
         $("#"+stockOne.elementId).parents("a").attr("href","./detail.html?exchangeID="+stockOne.exchangeID+"&id="+stockOne.id);
     }
 }
+// 得到昨收后画空表
+function initYCCharts(data,stockOne){
+    if(!data){
+        console.log("没有数据");
+        return;
+    }
+    var yc = parseFloat(stockOne.yc);//昨收
+    var decimal = stockOne.xmlData.PriceDecimal;//保留的小数位数
+    var limitUp = Number((yc + yc*0.1).toFixed(decimal));
+    var limitDown = Number((yc - yc*0.1).toFixed(decimal));
+    $("#"+stockOne.elementId).show();
+    var startTime=startTime1=endTime=endTime1=null;//各个指数的交易时间
+    var oneZSInfo = stockOne.oneZSInfo = compareTime(stockOne.xmlData,stockOne.id);
+    if(oneZSInfo.length>1){//分段计算时间
+        startTime = oneZSInfo[0].startTime;
+        endTime = oneZSInfo[0].endTime;
+        startTime1 = oneZSInfo[1].startTime1;
+        endTime1 = oneZSInfo[1].endTime1;
+    }else{//时间连续交易
+        startTime = oneZSInfo[0].startTime;
+        endTime = oneZSInfo[0].endTime;
+    }
+    var v_data = getxAxis(data.Date,stockOne);
+    stockOne.v_data = v_data;
+    var minY,middleY,maxY,minY1,maxY1;
+    if (yc) {
+        minY = (yc - stockOne.interval).toFixed(decimal);
+        middleY = yc.toFixed(decimal);
+        maxY = (yc + stockOne.interval).toFixed(decimal);
+
+        var dd = ((parseFloat(minY) - (yc)) / (yc) );//* 100);
+        if(Math.abs(dd) > 1){
+            minY1 = ((parseFloat(minY) - (yc)) / (yc)).toFixed(2);
+            maxY1 = ((parseFloat(maxY) - (yc)) / (yc)).toFixed(2);
+        }else{
+            minY1 = ((parseFloat(minY) - (yc)) / (yc) * 100).toFixed(2);
+            maxY1 = ((parseFloat(maxY) - (yc)) / (yc) * 100).toFixed(2);
+        }
+    } else {
+        minY = 0;
+        middleY = 1;
+        maxY = 2;
+    }
+    var split = parseFloat(((maxY - minY) / 6).toFixed(4));
+    var split1 = parseFloat(((maxY1 - minY1) / 6).toFixed(4));
+
+    var option = {
+        grid:{
+            show:true,
+            borderColor:"#e5e5e5",
+            top:'10%',
+            left:"5%",
+            right:"10%",
+            height:'90%',
+            containLabel:true
+        },
+        dataZoom:{
+            type:"inside",
+            disabled:true,
+        },
+        tooltip:{
+            trigger:"axis",
+            show:false
+        },
+        axisPointer:{
+            show:false,
+            label:{
+                show:false,
+                backgroundColor:"#555"
+            },
+            lineStyle:{
+                type:"dotted"
+            }
+        },
+        xAxis:{
+            splitLine:{
+                show:true,
+                interval:120,
+                lineStyle:{
+                    color:"#e5e5e5",
+                    opacity:1
+                }
+            },
+            axisLine:{
+                show:false
+            },
+            axisTick:{
+                show:false
+            },
+            type:"category",
+            data:v_data,
+            axisLabel: {
+                interval: function (number, string) {
+                    if(startTime1){//有中端
+                        if(string.indexOf(startTime)>-1 || string.indexOf(endTime)>-1 || string.indexOf(endTime1)>-1){
+                            return true;
+                        }else{
+                            return false;
+                        }
+                    }else{//连续
+                        if(string.indexOf(startTime)>-1 || string.indexOf(endTime)>-1){
+                            return true;
+                        }else{
+                            return false;
+                        }
+                    }
+                },
+                formatter: function (value, number) {
+                    var tVal = value.split(" ")[2];
+                    if(startTime1 && value.indexOf(endTime)>-1){
+                        if(startTime1 == "13:01"){
+                            tVal = tVal+"/"+"13:00";
+                        }else{
+                            tVal = tVal+"/"+startTime1;
+                        }
+                    }
+                    return tVal;
+                },
+                textStyle: {
+                    color: '#999'
+                }
+            },
+            axisPointer: {
+                show:false,
+                label: {
+                    formatter: function (params, value, s) {
+                        return (params.value);
+                    },
+                    padding:[3,5,5,5],
+                    show:false
+                }
+            }
+        },
+        yAxis:[{
+            position:"right",
+            type:"value",
+            min:minY,
+            max:maxY,
+            interval: split,
+            boundaryGap: [0, '100%'],
+            splitLine:{
+                lineStyle:{
+                    color:"#e5e5e5"
+                }
+            },
+            axisLine:{
+                show:false
+            },
+            axisTick:{
+                show:false
+            },
+            axisPointer: {
+                label: {
+                    formatter: function (params, value, s) {
+                        return parseFloat(params.value).toFixed(decimal);
+                    }
+                }
+            },
+            axisLabel: {
+                formatter: function (value, index) {
+                    if (index == 3) {
+                        return "";
+                    } else {
+                        return parseFloat(value).toFixed(decimal);
+                    }
+                },
+                textStyle: {
+                    color: "#999"
+                }
+            },
+        }
+        ],
+        series:{
+            type:'line',
+            symbolSize:0,
+            hoverAnimation:false,
+            connectNulls:true,
+            animation:false,
+            lineStyle:{
+                normal:{
+                    color:"#2b99ff",
+                    width:1
+                }
+            },
+            areaStyle:{
+                normal:{
+                    color:{
+                        type: 'linear',
+                        x:0,
+                        y:0,
+                        x2:0,
+                        y2:1,
+                        colorStops: [{
+                            offset: 0, color: 'rgba(43,153,255,0.3)' // 0% 处的颜色
+                        }, {
+                            offset: 1, color: 'rgba(43,153,255,0.1)' // 100% 处的颜色
+                        }],
+                        globalCoord: false
+                    }
+                }
+            },
+            markLine:{
+                symbolSize:0,
+                lineStyle:{
+                    normal:{
+                        color:"#999",
+                        type:"dotted"
+                    }
+                },
+                data: [
+                    {
+                        name: 'Y 轴值为 100 的水平线',
+                        yAxis: middleY
+                    }
+                ],
+                animation:false
+            },
+            data:''
+        }
+    };
+    stockOne.myChart = echarts.init(document.getElementById(stockOne.elementId));
+    stockOne.myChart.setOption(option);
+}
 // 填充报价表表单
 function fillNewOfferForm(data){
     var strHtml = '';
+    // if(count > 1){
+    //     bgColor = 'col_bgC';
+    // }
     for(var i=0;i<data.QueryRes.length;i++){
+        var pColor = oColor = hColor = lColor = ucColor = urColor = '',
+            pbgColor = obgColor = hbgColor = lbgColor = '';
+        var price=open=high=low=yc=udChange=udRatio=0;
+        price = parseFloat(data.QueryRes[i].Price);
+        open = parseFloat(data.QueryRes[i].OpenPx);
+        high = parseFloat(data.QueryRes[i].HighPx);
+        low = parseFloat(data.QueryRes[i].LowPx);
+        yc = parseFloat(data.QueryRes[i].PreClose);
+        udChange = parseFloat(data.QueryRes[i].UDChange);
+        udRatio = parseFloat(data.QueryRes[i].UDRatio);
+        for(var j=0;j<priceForm.length;j++){
+            if(data.QueryRes[i].ExchangeID == priceForm[j].ExchangeID && data.QueryRes[i].InstrumentID == priceForm[j].InstrumentID){
+                if(price != parseFloat(priceForm[j].Price)){
+                    pbgColor = 'col_bgC';
+                }else{
+                    pbgColor = '';
+                }
+                if(open != parseFloat(priceForm[j].OpenPx)){
+                    obgColor = 'col_bgC';
+                }else{
+                    obgColor = '';
+                }
+                if(high != parseFloat(priceForm[j].HighPx)){
+                    hbgColor = 'col_bgC';
+                }else{
+                    hbgColor = '';
+                }
+                if(low != parseFloat(priceForm[j].LowPx)){
+                    lbgColor = 'col_bgC';
+                }else{
+                    lbgColor = '';
+                }
+                break;
+            }
+        }
+        if(price > yc){
+            pColor = 'col_e22';
+        }else if(price < yc){
+            pColor = 'col_3bc';
+        }else{
+            pColor = '';
+        }
+        if(open > yc){
+            oColor = 'col_e22';
+        }else if(open < yc){
+            oColor = 'col_3bc';
+        }else{
+            oColor = '';
+        }
+        if(high > yc){
+            hColor = 'col_e22';
+        }else if(high < yc){
+            hColor = 'col_3bc';
+        }else{
+            hColor = '';
+        }
+        if(low > yc){
+            lColor = 'col_e22';
+        }else if(low < yc){
+            lColor = 'col_3bc';
+        }else{
+            lColor = '';
+        }
+        if(udRatio > 0){
+            urColor = 'col_e22';
+        }else if(udRatio < 0){
+            urColor = 'col_3bc';
+        }else{
+            urColor = '';
+        }
+        if(udChange > 0){
+            ucColor = 'col_e22';
+        }else if(udRatio < 0){
+            ucColor = 'col_3bc';
+        }else{
+            ucColor = '';
+        }
         strHtml += '<li class="zdf-list-one zdf-list-detail"><ul class="clearfix">'+
                     '<li>'+(nowPage==1?(i+1):(nowPage-1)*10+(i+1))+'</li>'+
                     '<li><a data-exchangeID='+data.QueryRes[i].ExchangeID+' data-id='+data.QueryRes[i].InstrumentID+' href="javascript:void(0)">'+data.QueryRes[i].InstrumentID+'</a></li>'+
                     '<li><a data-exchangeID='+data.QueryRes[i].ExchangeID+' data-id='+data.QueryRes[i].InstrumentID+' href="javascript:void(0)">'+data.QueryRes[i].InstrumentName+'</a></li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].Price).toFixed(2)+'</li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].UDChange).toFixed(2)+'</li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].UDRatio).toFixed(2)+'</li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].OpenPx).toFixed(2)+'</li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].HighPx).toFixed(2)+'</li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].LowPx).toFixed(2)+'</li>'+
-                    '<li>'+parseFloat(data.QueryRes[i].PreClose).toFixed(2)+'</li>'+
-                    // '<li>0</li>'+
+                    '<li class="'+pColor+' '+pbgColor+'">'+price.toFixed(2)+'</li>'+
+                    '<li class='+ucColor+'>'+udChange.toFixed(2)+'</li>'+
+                    '<li class='+urColor+'>'+udRatio.toFixed(2)+'</li>'+
+                    '<li class="'+oColor+' '+obgColor+'">'+open.toFixed(2)+'</li>'+
+                    '<li class="'+hColor+' '+hbgColor+'">'+high.toFixed(2)+'</li>'+
+                    '<li class="'+lColor+' '+lbgColor+'">'+low.toFixed(2)+'</li>'+
+                    '<li>'+yc.toFixed(2)+'</li>'+
                     '<li>'+parseFloat(data.QueryRes[i].VolRatio).toFixed(2)+'</li>'+
                     '<li>'+parseFloat(data.QueryRes[i].Amplitude).toFixed(2)+'</li>'+
-                    '<li>'+data.QueryRes[i].Volume+'</li>'+
-                    '<li>'+data.QueryRes[i].Value+'</li>'+
+                    '<li>'+data.QueryRes[i].AccVolume+'</li>'+
+                    '<li>'+data.QueryRes[i].AccTurover+'</li>'+
                     '</ul></li>';
     }
     $("#offerForm").html(strHtml);
@@ -1174,7 +1543,46 @@ $("#offerForm").on("dblclick","a",function(event){
     var id = $(this).attr("data-id");
     location.href = "../html/detail.html?exchangeID="+exchangeID+"&id="+id+"";
 });
-// 建立数据连接 websocket  
+// 建立报价表数据连接 websocket  
+var WebSocketConnectBlock = function(options) {
+    this.ws = null;
+    var lockReconnect = false;//避免重复连接 连接锁如果有正在连接的则锁住
+    wsUrl = options.wsUrl;  //开发
+    var timeout = 60000,//60秒
+        timeoutObj = null,
+        serverTimeoutObj = null;
+    var _target = this;
+    //建立socket连接
+    WebSocketConnectBlock.prototype.createWebSocket = function (wsUrl) {
+        try {
+            this.ws = new WebSocket(wsUrl);
+            return this.ws;
+        } catch (e) {
+            this.reconnect(wsUrl); //如果失败重连
+        }
+    };
+    // 关闭socket连接
+    WebSocketConnectBlock.prototype.closeWebSocket = function () {
+        this.ws.close();
+    };
+    //socket重连
+    WebSocketConnectBlock.prototype.reconnect = function () {
+        $this = this;
+        if (lockReconnect) return;
+        lockReconnect = true;
+        //没连接上会一直重连，设置延迟避免请求过多
+        setTimeout(function () {
+            offerWs = _target.createWebSocket($this.ws.url);
+            connectEvent(options);
+            lockReconnect = false;
+        }, 2000);
+    };
+    //发送请求
+    WebSocketConnectBlock.prototype.request = function (data) {
+        this.ws.send(JSON.stringify(data));
+    };
+};
+// 建立图表数据连接 websocket  
 var WebSocketConnect = function(options) {
     this.ws = null;
     var lockReconnect = false;//避免重复连接 连接锁如果有正在连接的则锁住
@@ -1189,7 +1597,7 @@ var WebSocketConnect = function(options) {
         "InstrumentID":_FirstS[1].code
     };
     //建立socket连接
-    WebSocketConnect.prototype.createWebSocket = function () {
+    WebSocketConnect.prototype.createWebSocket = function (wsUrl) {
         try {
             this.ws = new WebSocket(wsUrl);
             return this.ws;
@@ -1208,12 +1616,8 @@ var WebSocketConnect = function(options) {
         lockReconnect = true;
         //没连接上会一直重连，设置延迟避免请求过多
         setTimeout(function () {
-            if($this.ws.url.indexOf("443")>-1){
-                offerWs = _target.createWebSocket($this.ws.url);
-            }else{
-                socket = _target.createWebSocket($this.ws.url);
-            }
-            connectEvent(options);
+            echartsWS = _target.createWebSocket($this.ws.url);
+            initChartInfoEvt();
             lockReconnect = false;
         }, 2000);
     };
@@ -1232,11 +1636,7 @@ var WebSocketConnect = function(options) {
         var self = this;
         this.timeoutObj = setTimeout(function () {
             //onmessage拿到返回数据就说明连接正常
-            if(wsUrl.indexOf("443")>-1){
-
-            }else{
-                // self.request(XTB);
-            }
+            self.request(XTB);
             self.serverTimeoutObj = setTimeout(function () {//如果超过一定时间还没重置，说明后端主动断开了
                 self.ws.close();//如果onclose会执行reconnect，我们执行ws.close()就行了.如果直接执行reconnect 会触发onclose导致重连两次
             }, timeout);

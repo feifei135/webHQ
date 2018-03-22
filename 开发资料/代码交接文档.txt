@@ -1,0 +1,45 @@
+代码里都有详细的备注
+
+分时图：
+1.下载码表  请求地址：http://103.66.33.58:443/GetCalcData? 详见接口文档 InitXMLIChart这个对象的initXML()方法，得到交易时间段（用来画X轴，getxAxis这个方法中），保留小数位数，股票代码和名字；
+2.通过订阅分钟线得到昨收值，得到Y轴的最大值和最小值（也就是极限值用来做票平盘处理），可画Y轴，现在可以初始化一张空表了；这个initYCCharts方法中
+3.如果查询历史分钟线得到数据，那么加载到图表里，并且y轴的最大值和最小值也会随之变化，根据等到的数据来判断，取历史数据里的最大值，如果最大值大于极限值的话，取极限值，如果小于那么取这个历史数据里的最大值，取出历史数据里的最小值也一样，然后判断最大值、最小值和昨收之前的绝对值差，哪个大取哪个为间断，然后加昨收值，作为Y轴的最大值和最小值；这个initCharts方法中
+4.如果没有历史数据，就是开盘的情况，接受到数据时，可以改变Y轴的最大值和最小值，判断原理和第三步是一样的；
+5.成交量是收到数据后直接展示，没做其他处理
+
+订阅昨收的请求
+{"MsgType":"S1010","ExchangeID":"1","InstrumentID":"000001","Instrumenttype":"1"}
+订阅历史数据的请求
+{"MsgType":"Q3011","ExchangeID":"1","InstrumentID":"000001","StartIndex":"0","StartDate":"-1","StartTime":"0","Count":"0"}
+订阅最新分钟线的请求
+{"MsgType":"S1010","ExchangeID":"1","InstrumentID":"000001","Instrumenttype":"11"}
+查询市场状态的请求
+{"MsgType":"Q8002","ExchangeID":"1","InstrumentID":"000001","PructType":"0"}
+成交记录的请求
+{"MsgType":"Q3032","ExchangeID":"1","InstrumentID":"000001","PructType":"1","StartIndex":"-1","StartDate":"-1","Count":"14"}
+
+首页板块查询地址：
+http://103.66.33.58:443/GetSections?SectionClass=5
+查到数据展示在页面上，每个板块带一个id值，是data-sectionid；
+下面的三张小图是根据上面的板块id来获取的，一共六个板块，每个板块有三张小图，在market-center.js里定义的json数组_FirstS，_SecS，_ThirS。。。_SixthS；
+画图和上面的原理是一样的
+
+报价表查询地址：ws://103.66.33.67:443/
+请求数据：{"msgtype":"S3301","sectionId":1,"startIndex":0,"count":10,"field":0,"orderType":0}
+每页展示10条
+拼接字符串展示到html中，这个fillNewOfferForm方法中
+总数查询：{"msgtype":"Q3302","sectionId":1}
+得到的总数可以做分页
+分页用的是http://www.jq22.com/yanshi5697     jquery.pagination插件，点击下一页会有回调函数，callback: function (api) {
+            nowPage = api.getCurrent();
+            var data = {
+                "msgtype":"S3301",
+                "sectionId": secId,
+                "startIndex": api.getCurrent() * 10 - 9,
+                "count": 10,
+                "field": 0,
+                "orderType": 0
+            };
+            oWs.request(data);
+            做下一页的请求
+搜索在search这个方法里

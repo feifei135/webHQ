@@ -2,6 +2,10 @@ html,body,div,ul,li,h1,h2{
     margin: 0;
     padding: 0;
 }
+body{
+    font-family: 'Microsoft YaHei',Arial,'微软雅黑','宋体';
+    background-color:'#f6f6f6'; 
+}
 ul{
     display: block;
 }
@@ -53,20 +57,19 @@ table, tr, td, th {
     border: 0;
     padding: 0;
 }
-body{
-    font-family: 'Microsoft YaHei',Arial,'微软雅黑','宋体';
-    background-color:'#f6f6f6'; 
-}
 .wrap{
     width: 1280px;
     margin: auto;
     padding: 0 20px;
 }
 .col_e22{
-    color: #e22f2a;
+    color: #e22f2a !important;
 }
 .col_3bc{
-    color: #3bc25b;
+    color: #3bc25b !important;
+}
+.col_bgC{
+    background-color: rgba(240, 230, 140, 0.5);
 }
 /* 图表 */
 .container{
@@ -234,6 +237,12 @@ body{
 }
 .zdf-list-one{
     width: 100%;
+}
+.noData{
+    width: 100%;
+    text-align: center;
+    padding-top: 20px;
+    color: #555;
 }
 .zdf-list-one>ul,.zdf-list-detail>ul{
     display: flex;

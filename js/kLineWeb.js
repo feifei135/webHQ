@@ -924,12 +924,18 @@ function chartPaint(isHistory){
             // 绘制图形前，隐藏动图
             $("#withoutData").hide().siblings().show();
             // zoom起始的位置
-            var startZoom = (60/KLineSocket.HistoryData.dataLength>=1)?0:Math.ceil(100-80/(KLineSocket.HistoryData.dataLength+10)*100);
-            var maxValueSpan=300;
-            var minValueSpan=20;
+            if(KLineSocket.HistoryData.hCategoryList.length<30){
+                var startZoom = 0;
+                var maxValueSpan=100;
+                var minValueSpan=20;
+            }else{
+                var startZoom = (60/KLineSocket.HistoryData.dataLength>=1)?0:Math.ceil(100-80/(KLineSocket.HistoryData.dataLength+10)*100);
+                var maxValueSpan=200;
+                var minValueSpan=20;
+            }
             // 绘制K线图
             KLineSocket.KChart.setOption({
-                backgroundColor: "#fff",
+                // backgroundColor: "#fff",
                 animation: false,
                 tooltip: {
                     trigger: 'axis',
@@ -951,22 +957,24 @@ function chartPaint(isHistory){
                 },
                 grid: [
                     {
-                        top: "5%",
-                        height: '62.4%'
+                        top: "7%",
+                        height: '45.8%'
                     },
                     {
-                        top: '77.8%',
-                        height: '12.2%'
+                        top: '61.7%',
+                        height: '9.2%'
+                    },
+                    {
+                        top:'75.4%',
+                        height:'9.2%',
                     }
                 ],
                 dataZoom: [
                 {
                         show: true,
-                        xAxisIndex: [0, 1],
+                        xAxisIndex: [0, 1, 2],
                         type: 'slider',
                         top: '91.5%',
-                        start: startZoom,
-                        end: 100,
                         handleIcon: 'path://M306.1,413c0,2.2-1.8,4-4,4h-59.8c-2.2,0-4-1.8-4-4V200.8c0-2.2,1.8-4,4-4h59.8c2.2,0,4,1.8,4,4V413z',
                         handleSize:'100%',
                         handleStyle:{
@@ -984,8 +992,10 @@ function chartPaint(isHistory){
                         maxValueSpan: maxValueSpan,
                         minValueSpan: minValueSpan,
                         labelFormatter: function (valueStr) {
-                            
-                            if(KLineSocket.option.lineType!="mline"){
+                            if(KLineSocket.option.lineType=="day"||KLineSocket.option.lineType=="week"||KLineSocket.option.lineType=="month"||KLineSocket.option.lineType=="year"){
+                                var valueList = KLineSocket.HistoryData.hCategoryList[valueStr].split(" ");
+                                return valueList[0];
+                            }else{
                                 var valueList = KLineSocket.HistoryData.hCategoryList[valueStr].split(" ");
                                 return valueList[valueList.length-1];
                             }
@@ -995,9 +1005,7 @@ function chartPaint(isHistory){
                     },
                 {
                         type: 'inside',
-                        xAxisIndex: [0, 1],
-                        start: startZoom,
-                        end: 100,
+                        xAxisIndex: [0, 1, 2],
                         maxValueSpan: maxValueSpan,
                         minValueSpan: minValueSpan
                     },
@@ -1045,6 +1053,23 @@ function chartPaint(isHistory){
                         scale: true,
                         axisTick: { show:false },
                         boundaryGap: false,
+                        axisLine: { show: false },
+                        axisLabel: { show: false },
+                        splitLine: { show: false },
+                        axisPointer: {
+                            label: {
+                                show:false
+                            }
+                        }
+                    },
+                    {
+                        type: 'category',
+                        gridIndex: 2,
+                        data: KLineSocket.HistoryData.hCategoryList,
+                        scale: true,
+                        boundaryGap: false,
+                        axisTick: { show:false },
+                        // boundaryGap: true,
                         axisLine: { show: false },
                         axisLabel: { show: false },
                         splitLine: { show: false },
@@ -1116,6 +1141,36 @@ function chartPaint(isHistory){
                             }
                         }
                     },
+                    {
+                        type:'value',
+                        scale: true,
+                        gridIndex: 2,
+                        min: 0,
+                        axisTick:{ show:false },
+                        axisLabel: {
+                            show: true,
+                            color: '#999',
+                            fontSize: 14,
+                            formatter: function (value, index) {
+                                setyAsixName(value);
+                                return;
+                            }
+                        },
+                        axisLine: { 
+                            show: true,
+                            inZero: true,
+                            lineStyle: {
+                                color: '#e5e5e5'
+                            }
+                        },
+                        splitNumber: 2,
+                        splitLine: {
+                            show: true,
+                            lineStyle: {
+                                color: '#e5e5e5'
+                            }
+                        }
+                    }
                 ],
                 series: [
                     {
@@ -1189,6 +1244,32 @@ function chartPaint(isHistory){
                             }
                         },
                         barMaxWidth: 20
+                    },
+                    {
+                        name: 'MACD',
+                        type: 'line',
+                        xAxisIndex: 2,
+                        yAxisIndex: 2,
+                        data: KLineSocket.HistoryData.hCategoryList,
+                        itemStyle: {
+                            normal: {
+                                color: '#e22f2a',
+                                color0: '#3bc25b'
+                            }
+                        },
+                    },
+                    {
+                        name: 'MACD2',
+                        type: 'line',
+                        xAxisIndex: 2,
+                        yAxisIndex: 2,
+                        data: KLineSocket.HistoryData.hVolumesList,
+                        itemStyle: {
+                            normal: {
+                                color: '#000',
+                                color0: '#000'
+                            }
+                        },
                     }
                 ]
             });
@@ -1389,20 +1470,103 @@ function chartPaint(isHistory){
                             },
                             {
                                 data: KLineSocket.HistoryData.hVolumesList
+                            },
+                            {
+                                data: KLineSocket.HistoryData.hCategoryList
+                            },
+                            {
+                                data: KLineSocket.HistoryData.hVolumesList
                             }
                         ]
                     });
                 },300)
-                
-
             });
             KLineSocket.KChart.dispatchAction({
                 type: 'dataZoom',
                 // 开始位置的百分比，0 - 100
-                start: 80,
+                start: startZoom,
                 // 结束位置的百分比，0 - 100
                 end: 100
             });
+             // 量比等指标的点击
+        $(".kline-buttons span").click(function(){
+            // 高亮按钮
+            $(this).addClass("active").end();
+            $(this).siblings().removeClass("active");
+            //无-按钮
+            if($(this).index()==0){
+                // 绘制K线图
+                KLineSocket.KChart.setOption({
+                    grid: [
+                        {
+                            top: "7%",
+                            height: '60%'
+                        },
+                        {
+                            top: '76.7%',
+                            height: '9.2%'
+                        },
+                        {
+                            top: '200%',
+                            height: '0'
+                        }
+                    ],
+                    series: [
+                        {
+                            data: KLineSocket.HistoryData.hValuesList,
+                        },
+                        {
+                            data: KLineSocket.HistoryData.hVolumesList,
+                        },{
+                            data: null,
+                        },{
+                            data: null,
+                        }
+                    ]
+                });
+                $(".macd,.volMacd").hide();
+                $(".deal").css("top","72%");
+                $(".volumn").css("top","76%");
+            }else{
+                
+                // 其他按钮
+                $(".macd,.volMacd").show();
+                KLineSocket.KChart.setOption({
+                    grid: [
+                        {
+                            top: "7%",
+                            height: '45.8%'
+                        },
+                        {
+                            top: '61.7%',
+                            height: '9.2%'
+                        },
+                        {
+                            top:'75.4%',
+                            height:'9.2%',
+                        }
+                    ],
+                    series: [
+                        {
+                            data: KLineSocket.HistoryData.hValuesList,
+                        },
+                        {
+                            data: KLineSocket.HistoryData.hVolumesList,
+                        },
+                        {
+                            data: KLineSocket.HistoryData.hValuesList,
+                        },
+                        {
+                            data: KLineSocket.HistoryData.hVolumesList,
+                        }
+                    ]
+                });
+                $(".deal").css("top","57.1%");
+                $(".volumn").css("top","60.5%")
+            }
+            
+        });
+        $(".kline-buttons span:eq(0)").click();
         }else{
            // 绘制K线图
             KLineSocket.KChart.setOption({
@@ -1417,6 +1581,12 @@ function chartPaint(isHistory){
                 series: [
                     {
                         data: KLineSocket.HistoryData.hValuesList
+                    },
+                    {
+                        data: KLineSocket.HistoryData.hVolumesList
+                    },
+                    {
+                        data: KLineSocket.HistoryData.hCategoryList
                     },
                     {
                         data: KLineSocket.HistoryData.hVolumesList
@@ -1495,6 +1665,12 @@ function chartPaint(isHistory){
                 series: [
                     {
                         data: KLineSocket.HistoryData.hValuesList,
+                    },
+                    {
+                        data: KLineSocket.HistoryData.hVolumesList
+                    },
+                    {
+                        data: KLineSocket.HistoryData.hCategoryList
                     },
                     {
                         data: KLineSocket.HistoryData.hVolumesList
